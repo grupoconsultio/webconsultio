@@ -26,7 +26,7 @@ const DashboardMock = () => {
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="w-full max-w-6xl mx-auto mt-24 glass-elevated border border-[var(--color-brand-cyan)]/20 rounded-2xl p-6 lg:p-10 overflow-hidden relative shadow-2xl"
+      className="w-full max-w-6xl mx-auto mt-24 glass-elevated border border-[var(--color-brand-cyan)]/20 rounded-2xl p-4 md:p-6 lg:p-10 overflow-hidden relative shadow-2xl"
     >
       <div className="absolute -top-32 -right-32 w-[30rem] h-[30rem] bg-[var(--color-brand-cyan)]/10 blur-[100px] rounded-full pointer-events-none"></div>
       
@@ -41,10 +41,10 @@ const DashboardMock = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 relative z-10">
         {/* Main Area Chart */}
-        <div className="lg:col-span-2 bg-brand-bg/50 p-6 rounded-2xl border border-white/5 flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <span className="text-sm font-semibold uppercase text-brand-secondary">Evolución de Impacto</span>
-            <span className="px-3 py-1 bg-[var(--color-brand-cyan)]/10 text-[var(--color-brand-cyan)] rounded-full text-xs font-bold">+24% vs año anterior</span>
+        <div className="lg:col-span-2 bg-brand-bg/50 p-4 md:p-6 rounded-2xl border border-white/5 flex flex-col">
+          <div className="flex flex-wrap md:flex-nowrap justify-between items-start md:items-center gap-4 mb-6">
+            <span className="text-sm font-semibold uppercase text-brand-secondary">Evolución</span>
+            <span className="px-3 py-1 bg-[var(--color-brand-cyan)]/10 text-[var(--color-brand-cyan)] rounded-full text-xs font-bold w-fit">+24% vs año anterior</span>
           </div>
           <div className="flex-1 h-[220px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -68,7 +68,7 @@ const DashboardMock = () => {
         </div>
 
         {/* Pie Chart Analysis */}
-        <div className="lg:col-span-1 bg-brand-bg/50 p-6 rounded-2xl border border-white/5 flex flex-col">
+        <div className="lg:col-span-1 bg-brand-bg/50 p-4 md:p-6 rounded-2xl border border-white/5 flex flex-col">
            <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-semibold uppercase text-brand-secondary">Distribución</span>
           </div>
@@ -104,7 +104,7 @@ const DashboardMock = () => {
 
         {/* Side Metrics */}
         <div className="lg:col-span-1 flex flex-col gap-4">
-          <div className="bg-brand-bg/50 p-6 rounded-2xl border border-white/5 h-full flex flex-col justify-center">
+          <div className="bg-brand-bg/50 p-4 md:p-6 rounded-2xl border border-white/5 h-full flex flex-col justify-center">
             <div className="flex justify-between items-center text-brand-secondary mb-3">
               <span className="text-xs uppercase font-semibold text-white">Eficacia Proyectada</span>
               <Activity size={18} className="text-[var(--color-brand-cyan)]" />
@@ -112,7 +112,7 @@ const DashboardMock = () => {
             <span className="text-4xl font-display font-bold text-[var(--color-brand-cyan)] mb-2">94.2%</span>
             <span className="text-sm text-brand-secondary leading-tight">Incremento sostenido en los últimos meses.</span>
           </div>
-          <div className="bg-brand-bg/50 p-6 rounded-2xl border border-white/5 h-full flex flex-col justify-center">
+          <div className="bg-brand-bg/50 p-4 md:p-6 rounded-2xl border border-white/5 h-full flex flex-col justify-center">
             <div className="flex justify-between items-center text-brand-secondary mb-3">
               <span className="text-xs uppercase font-semibold text-white">Riesgo Operativo</span>
               <ShieldCheck size={18} className="text-[var(--color-brand-cyan)]" />

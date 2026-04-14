@@ -3,10 +3,11 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import './index.css'
+import './firebase'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter basename="/webconsultio">
+    <BrowserRouter>
       <App />
     </BrowserRouter>
   </React.StrictMode>,
