@@ -8,6 +8,9 @@ import Testimonials from './components/Testimonials';
 import CTA from './components/CTA';
 import Footer from './components/Footer';
 import Admin from './pages/Admin';
+import AdminLogin from './pages/AdminLogin';
+import Blog from './pages/Blog';
+import Demos from './pages/Demos';
 import { motion, useScroll, useSpring } from 'framer-motion';
 
 const MainLanding = () => {
@@ -49,7 +52,10 @@ function App() {
     <div className="bg-brand-bg min-h-screen selection:bg-[var(--color-brand-cyan)] selection:text-black text-brand-accent font-sans">
       <Routes>
         <Route path="/" element={<MainLanding />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/blog" element={<><Navbar /><Blog /><Footer /></>} />
+        <Route path="/demos" element={<><Navbar /><Demos /><Footer /></>} />
       </Routes>
 
       {/* Global Background visual flair */}

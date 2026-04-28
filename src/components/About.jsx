@@ -20,15 +20,14 @@ const About = () => {
   const [activeTab, setActiveTab] = useState('mission');
 
   return (
-    <section id="about" className="py-24 bg-brand-surface relative overflow-hidden">
+    <section id="about" className="py-12 md:py-24 bg-brand-surface relative overflow-hidden">
       <div className="container mx-auto px-6">
-        
+
         {/* Main Header & Tabs */}
-        <div className="flex flex-col items-center text-center max-w-4xl mx-auto mb-16">
+        <div className="flex flex-col items-center text-center max-w-4xl mx-auto mb-10 md:mb-16">
           <span className="text-[var(--color-brand-cyan)] font-semibold tracking-widest uppercase text-xs">Quiénes Somos</span>
-          <h2 className="text-4xl md:text-5xl font-display font-bold mt-4 mb-6">
-            Transformamos datos en <br/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-[var(--color-brand-cyan)]">información estratégica</span>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold mt-4 mb-6">
+            Transformamos datos en <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-[var(--color-brand-cyan)]">información estratégica</span>
           </h2>
           <p className="text-brand-secondary text-lg mb-10 leading-relaxed max-w-3xl">
             Somos una consultora especializada que trabaja con gobiernos y organizaciones públicas y privadas para mejorar la gestión y fortalecer estrategias institucionales a través del poder de la evidencia.

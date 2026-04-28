@@ -21,6 +21,7 @@ const Navbar = () => {
     { name: 'Nosotros', href: '#about' },
     { name: 'Servicios', href: '#services' },
     { name: 'Testimonios', href: '#testimonials' },
+    { name: 'Blog', href: '/blog' },
     { name: 'Contacto', href: '#contact' },
   ];
 
@@ -94,7 +95,7 @@ const Navbar = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden absolute top-full left-0 right-0 glass border-b overflow-hidden"
+            className="md:hidden absolute top-full left-0 right-0 bg-brand-surface/98 backdrop-blur-xl border-b border-white/10 overflow-hidden"
           >
             <div className="flex flex-col p-6 gap-4">
               {navLinks.map((link) => {

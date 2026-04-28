@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { LineChart, LayoutDashboard, MonitorSmartphone, Target, Users, Search } from 'lucide-react';
-import DashboardMock from './DashboardMock';
 
 const services = [
   {
@@ -12,7 +11,7 @@ const services = [
   {
     icon: <MonitorSmartphone className="w-8 h-8 text-[var(--color-brand-cyan)]" />,
     title: "Desarrollo de Tecnología",
-    description: "Herramientas avanzadas de captación de datos y arquitectura de sistemas de información."
+    description: "Herramientas avanzadas de captación de datos, arquitectura de sistemas de información y desarrollo de sitios web a medida."
   },
   {
     icon: <Users className="w-8 h-8 text-[var(--color-brand-cyan)]" />,
@@ -80,8 +79,7 @@ const Services = () => {
           ))}
         </div>
 
-        {/* Mock Dashboard is integrated here per user request */}
-        <DashboardMock />
+
       </div>
     </section>
   );
