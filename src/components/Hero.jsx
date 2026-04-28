@@ -82,7 +82,7 @@ const Hero = () => {
   };
 
   return (
-    <section className="relative min-h-[80vh] md:min-h-screen flex items-start pt-24 md:items-center md:pt-20 overflow-hidden bg-transparent">
+    <section className="relative min-h-[80vh] md:min-h-screen flex items-start pt-36 md:items-center md:pt-20 overflow-hidden bg-transparent">
       {/* Particle Background */}
       {init && (
         <Particles

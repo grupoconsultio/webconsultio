@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sistema de Atención al Vecino — Municipio</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand:#1B4B8A;--brand-light:#EBF2FF;--brand-mid:#2E6BC7;
+  --accent:#E8A020;--accent-light:#FFF7E6;
+  --green:#1A7A4A;--green-light:#E8F5EE;
+  --red:#C0392B;--red-light:#FDEAEA;
+  --orange:#D4600A;--orange-light:#FEF0E6;
+  --gray-50:#F8F7F4;--gray-100:#EFEDE8;--gray-200:#DDD9D0;
+  --gray-400:#9A9488;--gray-600:#5E5A52;--gray-800:#2D2B27;
+  --shadow:0 2px 8px rgba(0,0,0,.08);--shadow-lg:0 8px 24px rgba(0,0,0,.12);
+  --radius:10px;--radius-lg:16px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--gray-50);color:var(--gray-800);min-height:100vh;font-size:15px;line-height:1.6}
+h1{font-family:'DM Serif Display',serif;font-weight:400}
+
+/* NAV */
+.topbar{background:var(--brand);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.topbar-title{font-family:'DM Serif Display',serif;font-size:18px;display:flex;align-items:center;gap:10px}
+.topbar-nav{display:flex;gap:4px}
+.nav-btn{background:transparent;border:none;color:rgba(255,255,255,.75);padding:8px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:500;transition:all .2s}
+.nav-btn:hover,.nav-btn.active{background:rgba(255,255,255,.15);color:#fff}
+
+/* LAYOUT */
+.page{display:none;max-width:860px;margin:0 auto;padding:32px 20px 60px}
+.page.visible{display:block}
+
+/* CARDS */
+.card{background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:28px}
+.card+.card{margin-top:20px}
+.card-title{font-size:18px;font-weight:600;color:var(--brand);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+
+/* FORM */
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.form-group input,.form-group textarea,.form-group select{
+  width:100%;border:1.5px solid var(--gray-200);border-radius:var(--radius);
+  padding:11px 14px;font-family:inherit;font-size:15px;color:var(--gray-800);
+  background:#fff;transition:border .2s,box-shadow .2s;outline:none
+}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--brand-mid);box-shadow:0 0 0 3px rgba(46,107,199,.12)}
+.form-group textarea{resize:vertical;min-height:90px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:560px){.form-row{grid-template-columns:1fr}}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 24px;border-radius:var(--radius);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-primary:hover{background:var(--brand-mid)}
+.btn-secondary{background:var(--gray-100);color:var(--gray-800)}
+.btn-secondary:hover{background:var(--gray-200)}
+.btn-success{background:var(--green);color:#fff}
+.btn-success:hover{background:#15623c}
+.btn-sm{padding:7px 16px;font-size:13px}
+
+/* BADGES */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;letter-spacing:.03em}
+.badge-blue{background:var(--brand-light);color:var(--brand)}
+.badge-green{background:var(--green-light);color:var(--green)}
+.badge-orange{background:var(--orange-light);color:var(--orange)}
+.badge-red{background:var(--red-light);color:var(--red)}
+.badge-gray{background:var(--gray-100);color:var(--gray-600)}
+
+/* WIZARD STEPS */
+.wizard-steps{display:flex;gap:0;margin-bottom:32px;border-radius:var(--radius);overflow:hidden;border:1.5px solid var(--gray-200)}
+.wizard-step{flex:1;padding:12px 8px;text-align:center;font-size:13px;font-weight:500;color:var(--gray-400);background:var(--gray-50);border-right:1.5px solid var(--gray-200);transition:all .3s}
+.wizard-step:last-child{border-right:none}
+.wizard-step.done{background:var(--green-light);color:var(--green)}
+.wizard-step.active{background:var(--brand);color:#fff}
+.wizard-step .step-num{display:block;font-size:18px;font-weight:700;line-height:1}
+
+/* CATEGORY GRID */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:8px}
+.cat-card{border:2px solid var(--gray-200);border-radius:var(--radius-lg);padding:16px 12px;text-align:center;cursor:pointer;transition:all .2s;background:#fff}
+.cat-card:hover{border-color:var(--brand-mid);background:var(--brand-light)}
+.cat-card.selected{border-color:var(--brand);background:var(--brand-light)}
+.cat-card .cat-icon{font-size:28px;display:block;margin-bottom:8px}
+.cat-card .cat-name{font-size:13px;font-weight:600;color:var(--gray-800)}
+.subcat-list{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+.subcat-pill{padding:8px 16px;border:1.5px solid var(--gray-200);border-radius:20px;cursor:pointer;font-size:13px;font-weight:500;background:#fff;transition:all .2s}
+.subcat-pill:hover{border-color:var(--brand-mid);color:var(--brand)}
+.subcat-pill.selected{border-color:var(--brand);background:var(--brand);color:#fff}
+
+/* EXPEDIENTE RESULT */
+.expediente-box{background:var(--brand);color:#fff;border-radius:var(--radius-lg);padding:32px;text-align:center;margin-bottom:20px}
+.expediente-num{font-family:'DM Serif Display',serif;font-size:36px;letter-spacing:2px;margin:12px 0}
+.expediente-sub{opacity:.8;font-size:14px}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1.5px solid var(--gray-200)}
+table{width:100%;border-collapse:collapse;background:#fff}
+thead{background:var(--gray-50)}
+th{padding:12px 16px;text-align:left;font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.05em;border-bottom:1.5px solid var(--gray-200)}
+td{padding:12px 16px;border-bottom:1px solid var(--gray-100);font-size:14px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--gray-50)}
+
+/* TIMELINE */
+.timeline{list-style:none;position:relative;padding-left:28px}
+.timeline::before{content:'';position:absolute;left:9px;top:0;bottom:0;width:2px;background:var(--gray-200)}
+.timeline li{position:relative;margin-bottom:18px}
+.timeline li::before{content:'';position:absolute;left:-22px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--brand);border:2px solid #fff;box-shadow:0 0 0 2px var(--brand)}
+.timeline li.done::before{background:var(--green)}
+.timeline-time{font-size:12px;color:var(--gray-400)}
+.timeline-text{font-size:14px;color:var(--gray-800);font-weight:500}
+
+/* STARS */
+.star-row{display:flex;gap:6px;font-size:28px;cursor:pointer;margin:8px 0}
+.star{color:var(--gray-200);transition:color .15s;user-select:none}
+.star.lit,.star:hover~.star{color:var(--accent)}
+.star:hover,.star.lit{color:var(--accent)}
+
+/* METRICS */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+.metric-card{background:#fff;border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow);border-left:4px solid var(--brand)}
+.metric-card.green{border-color:var(--green)}.metric-card.orange{border-color:var(--accent)}.metric-card.red{border-color:var(--red)}
+.metric-val{font-size:36px;font-weight:700;color:var(--gray-800);line-height:1}
+.metric-label{font-size:13px;color:var(--gray-400);margin-top:4px}
+
+/* SEARCH BAR */
+.search-bar{display:flex;gap:12px;margin-bottom:20px;align-items:center;flex-wrap:wrap}
+.search-bar input,.search-bar select{border:1.5px solid var(--gray-200);border-radius:var(--radius);padding:9px 14px;font-family:inherit;font-size:14px;background:#fff;outline:none}
+.search-bar input:focus,.search-bar select:focus{border-color:var(--brand-mid)}
+.search-bar input{flex:1;min-width:200px}
+
+/* SLA bar */
+.sla-bar{height:6px;border-radius:3px;background:var(--gray-200);overflow:hidden;margin-top:6px}
+.sla-fill{height:100%;border-radius:3px;transition:width .5s}
+.sla-ok{background:var(--green)}.sla-warn{background:var(--accent)}.sla-over{background:var(--red)}
+
+/* TOAST */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gray-800);color:#fff;padding:14px 24px;border-radius:var(--radius);font-size:14px;font-weight:500;opacity:0;transition:all .4s;z-index:999;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* SLA status badge */
+.sla-status{font-size:12px;font-weight:600;padding:2px 8px;border-radius:12px}
+
+.section-title{font-size:22px;font-weight:600;color:var(--gray-800);margin-bottom:6px}
+.section-sub{color:var(--gray-400);font-size:14px;margin-bottom:28px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="rgba(255,255,255,.2)"/><path d="M7 14h14M14 7v14" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
+    Atención al Vecino
+  </div>
+  <div class="topbar-nav">
+    <button class="nav-btn active" onclick="goPage('inicio')">Inicio</button>
+    <button class="nav-btn" onclick="goPage('seguimiento')">Seguimiento</button>
+    <button class="nav-btn" onclick="goPage('admin')">Panel Admin</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ PÁGINA INICIO (WIZARD) ═══════════════════ -->
+<div id="page-inicio" class="page visible">
+  <div style="text-align:center;margin-bottom:36px">
+    <h1 style="font-size:32px;color:var(--brand);margin-bottom:8px">¿Cómo podemos ayudarte?</h1>
+    <p style="color:var(--gray-400);font-size:16px">Registrá tu reclamo o consulta. Te responderemos a la brevedad.</p>
+  </div>
+
+  <div class="wizard-steps" id="wizard-steps">
+    <div class="wizard-step active" id="ws1"><span class="step-num">1</span>Tus datos</div>
+    <div class="wizard-step" id="ws2"><span class="step-num">2</span>Categoría</div>
+    <div class="wizard-step" id="ws3"><span class="step-num">3</span>Detalle</div>
+    <div class="wizard-step" id="ws4"><span class="step-num">4</span>Confirmación</div>
+  </div>
+
+  <!-- STEP 1: Datos vecino -->
+  <div id="step1" class="card">
+    <div class="card-title">👤 Tus datos personales</div>
+    <div class="form-group">
+      <label>Nombre completo *</label>
+      <input type="text" id="v-nombre" placeholder="Juan García"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Calle y número *</label>
+        <input type="text" id="v-calle" placeholder="Rivadavia 1234"/>
+      </div>
+      <div class="form-group">
+        <label>Barrio *</label>
+        <input type="text" id="v-barrio" placeholder="Centro"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Celular</label>
+        <input type="tel" id="v-cel" placeholder="0358-1234567"/>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="v-email" placeholder="juan@mail.com"/>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--gray-400);margin-bottom:20px">* Completá al menos un medio de contacto (celular o email)</p>
+    <button class="btn btn-primary" onclick="nextStep(2)">Continuar →</button>
+  </div>
+
+  <!-- STEP 2: Categoría -->
+  <div id="step2" class="card" style="display:none">
+    <div class="card-title">📋 Tipo de reclamo</div>
+    <div class="cat-grid" id="cat-grid"></div>
+    <div id="subcat-section" style="display:none;margin-top:20px">
+      <div class="form-group">
+        <label id="subcat-label">Subcategoría</label>
+        <div class="subcat-list" id="subcat-list"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:24px">
+      <button class="btn btn-secondary" onclick="nextStep(1)">← Volver</button>
+      <button class="btn btn-primary" onclick="nextStep(3)">Continuar →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Descripción -->
+  <div id="step3" class="card" style="display:none">
+    <div class="card-title">📝 Descripción del problema</div>
+    <div class="form-group">
+      <label>Describí el problema con detalle *</label>
+      <textarea id="v-desc" placeholder="Indicá el lugar exacto, cuándo ocurrió, qué observaste..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Adjuntar foto (opcional)</label>
+      <input type="file" id="v-foto" accept="image/*" style="font-size:13px;padding:8px"/>
+    </div>
+    <div style="background:var(--accent-light);border:1.5px solid #f0c060;border-radius:var(--radius);padding:14px;margin-bottom:20px;font-size:13px">
+      <strong>⏱ Plazo estimado de respuesta:</strong> <span id="sla-preview">—</span>
+    </div>
+    <div style="display:flex;gap:12px">
+      <button class="btn btn-secondary" onclick="nextStep(2)">← Volver</button>
+      <button class="btn btn-primary" onclick="submitReclamo()">Enviar reclamo →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: Confirmación -->
+  <div id="step4" style="display:none">
+    <div class="expediente-box">
+      <div style="font-size:14px;opacity:.8">Tu reclamo fue registrado exitosamente</div>
+      <div class="expediente-num" id="exp-num">MUN-2024-00000</div>
+      <div class="expediente-sub">Guardá este número para hacer seguimiento</div>
+    </div>
+    <div class="card">
+      <div class="card-title">✅ Resumen del reclamo</div>
+      <div id="resumen-reclamo"></div>
+      <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--gray-100)">
+        <p style="font-size:13px;color:var(--gray-400);margin-bottom:16px">📬 Se enviará una notificación a tu contacto registrado cuando se resuelva el reclamo.</p>
+        <button class="btn btn-primary" onclick="goPage('seguimiento');document.getElementById('s-expediente').value=document.getElementById('exp-num').textContent;buscarExpediente()">Ver mi reclamo →</button>
+        <button class="btn btn-secondary" style="margin-left:12px" onclick="nuevoReclamo()">Registrar otro reclamo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PÁGINA SEGUIMIENTO ═══════════════════ -->
+<div id="page-seguimiento" class="page">
+  <div class="section-title">Seguimiento de reclamo</div>
+  <div class="section-sub">Ingresá el número de expediente para consultar el estado</div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div style="display:flex;gap:12px;align-items:flex-end">
+      <div class="form-group" style="flex:1;margin:0">
+        <label>Número de expediente</label>
+        <input type="text" id="s-expediente" placeholder="MUN-2024-00001" style="font-family:'DM Serif Display',serif;letter-spacing:1px"/>
+      </div>
+      <button class="btn btn-primary" onclick="buscarExpediente()">Buscar</button>
+    </div>
+  </div>
+
+  <div id="seguimiento-result" style="display:none">
+    <div class="card" style="margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-size:12px;color:var(--gray-400);font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px">Expediente</div>
+          <div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--brand)" id="seg-num"></div>
+        </div>
+        <div id="seg-badge"></div>
+      </div>
+      <hr style="margin:16px 0;border:none;border-top:1px solid var(--gray-100)"/>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="seg-meta"></div>
+      <div style="margin-top:16px" id="seg-sla-bar"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">🕒 Historial del reclamo</div>
+      <ul class="timeline" id="seg-timeline"></ul>
+    </div>
+
+    <div id="encuesta-section" style="display:none">
+      <div class="card">
+        <div class="card-title">⭐ Calificá la atención recibida</div>
+        <p style="font-size:14px;color:var(--gray-600);margin-bottom:20px">Tu opinión nos ayuda a mejorar el servicio.</p>
+        <div class="form-group">
+          <label>Calificación general</label>
+          <div class="star-row" id="star-row">
+            <span class="star" onclick="setStar(1)">★</span>
+            <span class="star" onclick="setStar(2)">★</span>
+            <span class="star" onclick="setStar(3)">★</span>
+            <span class="star" onclick="setStar(4)">★</span>
+            <span class="star" onclick="setStar(5)">★</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>¿Se resolvió tu problema?</label>
+          <select id="enc-resolvio"><option value="">— Seleccioná —</option><option value="si">Sí, completamente</option><option value="parcial">Parcialmente</option><option value="no">No</option></select>
+        </div>
+        <div class="form-group">
+          <label>¿El tiempo de respuesta fue adecuado?</label>
+          <select id="enc-tiempo"><option value="">— Seleccioná —</option><option value="si">Sí</option><option value="no">No</option></select>
+        </div>
+        <div class="form-group">
+          <label>Comentario adicional (opcional)</label>
+          <textarea id="enc-comentario" placeholder="Tu opinión..."></textarea>
+        </div>
+        <button class="btn btn-success" onclick="enviarEncuesta()">Enviar encuesta</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PÁGINA ADMIN ═══════════════════ -->
+<div id="page-admin" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:28px">
+    <div>
+      <div class="section-title">Panel de Administración</div>
+      <div class="section-sub" style="margin:0">Gestión de reclamos municipales</div>
+    </div>
+    <div style="font-size:13px;color:var(--gray-400)">Actualizado: <strong id="admin-date"></strong></div>
+  </div>
+
+  <div class="metrics-grid" id="metrics-grid"></div>
+
+  <div class="card">
+    <div class="card-title">📋 Reclamos activos</div>
+    <div class="search-bar">
+      <input type="text" id="admin-search" placeholder="Buscar por expediente, vecino..." oninput="filtrarAdmin()"/>
+      <select id="admin-filter-cat" onchange="filtrarAdmin()">
+        <option value="">Todas las categorías</option>
+        <option>Salud</option><option>Servicios Públicos</option><option>Obras Públicas</option><option>Pago de Tributos</option><option>Otros</option>
+      </select>
+      <select id="admin-filter-est" onchange="filtrarAdmin()">
+        <option value="">Todos los estados</option>
+        <option>Pendiente</option><option>En proceso</option><option>Resuelto</option><option>Vencido</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table id="admin-table">
+        <thead><tr>
+          <th>Expediente</th><th>Vecino</th><th>Categoría</th><th>Estado</th><th>SLA</th><th>Acciones</th>
+        </tr></thead>
+        <tbody id="admin-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ADMIN RECLAMO -->
+<div id="admin-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:var(--radius-lg);max-width:560px;width:100%;box-shadow:var(--shadow-lg);max-height:90vh;overflow-y:auto">
+    <div style="padding:24px;border-bottom:1px solid var(--gray-100);display:flex;justify-content:space-between;align-items:center">
+      <strong id="modal-title" style="font-size:16px">Detalle del reclamo</strong>
+      <button onclick="closeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray-400)">✕</button>
+    </div>
+    <div id="modal-body" style="padding:24px"></div>
+  </div>
+</div>
+
+<div id="toast">✓ Operación exitosa</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────
+const CATEGORIAS = [
+  {id:'salud', nombre:'Salud', icon:'🏥', area:'Secretaría de Salud', sla:72, subs:[
+    {id:'s1',nombre:'Higiene urbana / fumigación',sla:72},
+    {id:'s2',nombre:'Zoonosis (animales sueltos)',sla:24},
+    {id:'s3',nombre:'Brotes o epidemias',sla:24},
+    {id:'s4',nombre:'Control de plagas',sla:72},
+    {id:'s5',nombre:'Otros de salud',sla:72}
+  ]},
+  {id:'servicios', nombre:'Servicios Públicos', icon:'💡', area:'Secretaría de Infraestructura', sla:120, subs:[
+    {id:'sv1',nombre:'Alumbrado público',sla:48},
+    {id:'sv2',nombre:'Recolección de residuos',sla:120},
+    {id:'sv3',nombre:'Agua y cloacas',sla:48},
+    {id:'sv4',nombre:'Gas (red pública)',sla:48},
+    {id:'sv5',nombre:'Otros servicios',sla:120}
+  ]},
+  {id:'obras', nombre:'Obras Públicas', icon:'🏗️', area:'Dirección de Obras Públicas', sla:240, subs:[
+    {id:'o1',nombre:'Baches y pavimento',sla:240},
+    {id:'o2',nombre:'Veredas rotas',sla:240},
+    {id:'o3',nombre:'Semáforos y señalización',sla:120},
+    {id:'o4',nombre:'Espacios verdes',sla:240},
+    {id:'o5',nombre:'Desagües pluviales',sla:240},
+    {id:'o6',nombre:'Otros de obras',sla:240}
+  ]},
+  {id:'tributos', nombre:'Pago de Tributos', icon:'💰', area:'Dirección de Rentas', sla:120, subs:[
+    {id:'t1',nombre:'Consulta de deuda',sla:120},
+    {id:'t2',nombre:'Error en liquidación',sla:120},
+    {id:'t3',nombre:'Plan de pagos',sla:120},
+    {id:'t4',nombre:'Exenciones y descuentos',sla:120},
+    {id:'t5',nombre:'Comprobante no recibido',sla:48},
+    {id:'t6',nombre:'Otros tributarios',sla:120}
+  ]},
+  {id:'otros', nombre:'Otros', icon:'📌', area:'Mesa de Entradas General', sla:168, subs:[
+    {id:'ot1',nombre:'Ruidos molestos',sla:48},
+    {id:'ot2',nombre:'Habilitaciones comerciales',sla:168},
+    {id:'ot3',nombre:'Cementerio',sla:168},
+    {id:'ot4',nombre:'Actividades culturales',sla:168},
+    {id:'ot5',nombre:'Otros',sla:168}
+  ]}
+];
+
+// Demo reclamos
+let reclamos = [
+  {id:'MUN-2024-00001',vecino:'María López',dir:'Belgrano 456, Centro',cel:'0358-111222',email:'maria@mail.com',cat:'Obras Públicas',catId:'obras',sub:'Baches y pavimento',area:'Dirección de Obras Públicas',estado:'En proceso',desc:'Gran bache en la intersección de Belgrano y Rivadavia que dañó mi vehículo.',fecha:'15/01/2024',vencimiento:new Date(Date.now()+86400000*2),sla:240,resolucion:'',historial:[{estado:'Pendiente',texto:'Reclamo recibido y registrado',fecha:'15/01/2024 09:30'},{estado:'En proceso',texto:'Asignado a cuadrilla de mantenimiento vial',fecha:'16/01/2024 08:00'}]},
+  {id:'MUN-2024-00002',vecino:'Carlos Fernández',dir:'Mitre 789, Alberdi',cel:'0358-333444',email:'carlos@mail.com',cat:'Salud',catId:'salud',sub:'Zoonosis (animales sueltos)',area:'Secretaría de Salud',estado:'Resuelto',desc:'Perro sin collar en la plaza que mordió a un niño.',fecha:'12/01/2024',vencimiento:new Date(Date.now()-86400000*3),sla:24,resolucion:'Se realizó captura del animal y se derivó al zoonosis municipal. Se aplicó vacuna antirrábica al afectado.',historial:[{estado:'Pendiente',texto:'Reclamo recibido',fecha:'12/01/2024 14:00'},{estado:'En proceso',texto:'Equipo de zoonosis en camino',fecha:'12/01/2024 14:45'},{estado:'Resuelto',texto:'Animal capturado. Caso cerrado.',fecha:'12/01/2024 17:30'}]},
+  {id:'MUN-2024-00003',vecino:'Ana Rodríguez',dir:'San Martín 321, Banda Norte',cel:'0358-555666',email:'',cat:'Servicios Públicos',catId:'servicios',sub:'Alumbrado público',area:'Secretaría de Infraestructura',estado:'Pendiente',desc:'Tres luminarias apagadas en la cuadra desde hace una semana. Zona oscura e insegura.',fecha:'18/01/2024',vencimiento:new Date(Date.now()+86400000*1),sla:48,resolucion:'',historial:[{estado:'Pendiente',texto:'Reclamo recibido y derivado al área de alumbrado',fecha:'18/01/2024 11:00'}]},
+  {id:'MUN-2024-00004',vecino:'Roberto Gómez',dir:'Lavalle 654, Las Flores',cel:'',email:'roberto@mail.com',cat:'Pago de Tributos',catId:'tributos',sub:'Error en liquidación',area:'Dirección de Rentas',estado:'Vencido',desc:'La liquidación del ABL de enero es el doble que la del año pasado sin justificación.',fecha:'10/01/2024',vencimiento:new Date(Date.now()-86400000*1),sla:120,resolucion:'',historial:[{estado:'Pendiente',texto:'Reclamo recibido',fecha:'10/01/2024 10:00'}]},
+  {id:'MUN-2024-00005',vecino:'Laura Martínez',dir:'Córdoba 987, Centro',cel:'0358-777888',email:'laura@mail.com',cat:'Obras Públicas',catId:'obras',sub:'Desagües pluviales',area:'Dirección de Obras Públicas',estado:'En proceso',desc:'La boca de tormenta está tapada y con lluvia se inunda toda la cuadra.',fecha:'17/01/2024',vencimiento:new Date(Date.now()+86400000*5),sla:240,resolucion:'',historial:[{estado:'Pendiente',texto:'Reclamo recibido',fecha:'17/01/2024 09:00'},{estado:'En proceso',texto:'Inspección programada para mañana',fecha:'17/01/2024 15:00'}]}
+];
+
+let currentStep = 1;
+let selectedCat = null;
+let selectedSub = null;
+let selectedStarVal = 0;
+
+// ─── INIT ────────────────────────────────────────────────────────────────
+function init(){
+  renderCatGrid();
+  renderAdmin();
+  document.getElementById('admin-date').textContent = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'});
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────
+function goPage(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('visible'));
+  document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('visible');
+  document.querySelector(`.nav-btn[onclick="goPage('${p}')"]`).classList.add('active');
+}
+
+// ─── WIZARD ──────────────────────────────────────────────────────────────
+function nextStep(n){
+  // Validate
+  if(n===2){
+    const nom=document.getElementById('v-nombre').value.trim();
+    const cal=document.getElementById('v-calle').value.trim();
+    const bar=document.getElementById('v-barrio').value.trim();
+    const cel=document.getElementById('v-cel').value.trim();
+    const eml=document.getElementById('v-email').value.trim();
+    if(!nom||!cal||!bar){showToast('⚠️ Completá nombre y dirección');return}
+    if(!cel&&!eml){showToast('⚠️ Ingresá celular o email');return}
+  }
+  if(n===3){
+    if(!selectedCat){showToast('⚠️ Seleccioná una categoría');return}
+    if(!selectedSub){showToast('⚠️ Seleccioná una subcategoría');return}
+    updateSlaPreview();
+  }
+  if(n==='submit'){submitReclamo();return}
+  currentStep=n;
+  [1,2,3,4].forEach(i=>{
+    const s=document.getElementById('step'+i);
+    if(s) s.style.display = i===n?'block':'none';
+  });
+  document.getElementById('step4').style.display = n===4?'block':'none';
+  updateWizardSteps();
+  window.scrollTo({top:80,behavior:'smooth'});
+}
+
+function updateWizardSteps(){
+  [1,2,3,4].forEach(i=>{
+    const el=document.getElementById('ws'+i);
+    el.className='wizard-step';
+    if(i<currentStep) el.classList.add('done');
+    else if(i===currentStep) el.classList.add('active');
+  });
+}
+
+// ─── CATEGORÍAS ──────────────────────────────────────────────────────────
+function renderCatGrid(){
+  const grid=document.getElementById('cat-grid');
+  grid.innerHTML=CATEGORIAS.map(c=>`
+    <div class="cat-card" id="cat-${c.id}" onclick="selectCat('${c.id}')">
+      <span class="cat-icon">${c.icon}</span>
+      <span class="cat-name">${c.nombre}</span>
+    </div>
+  `).join('');
+}
+
+function selectCat(id){
+  selectedCat=CATEGORIAS.find(c=>c.id===id);
+  selectedSub=null;
+  document.querySelectorAll('.cat-card').forEach(x=>x.classList.remove('selected'));
+  document.getElementById('cat-'+id).classList.add('selected');
+  const sec=document.getElementById('subcat-section');
+  const list=document.getElementById('subcat-list');
+  document.getElementById('subcat-label').textContent=`Subcategoría de ${selectedCat.nombre}`;
+  list.innerHTML=selectedCat.subs.map(s=>`
+    <div class="subcat-pill" id="sub-${s.id}" onclick="selectSub('${s.id}')">${s.nombre}</div>
+  `).join('');
+  sec.style.display='block';
+}
+
+function selectSub(id){
+  if(!selectedCat) return;
+  selectedSub=selectedCat.subs.find(s=>s.id===id);
+  document.querySelectorAll('.subcat-pill').forEach(x=>x.classList.remove('selected'));
+  document.getElementById('sub-'+id).classList.add('selected');
+}
+
+function updateSlaPreview(){
+  if(!selectedSub) return;
+  const h=selectedSub.sla;
+  let txt;
+  if(h<24) txt=`${h} horas`;
+  else if(h===24) txt='24 horas (urgente)';
+  else if(h<168) txt=`${Math.round(h/24)} días hábiles`;
+  else txt=`${Math.round(h/24)} días hábiles`;
+  document.getElementById('sla-preview').textContent=txt+` — Área: ${selectedCat.area}`;
+}
+
+// ─── SUBMIT RECLAMO ──────────────────────────────────────────────────────
+function submitReclamo(){
+  const desc=document.getElementById('v-desc').value.trim();
+  if(!desc){showToast('⚠️ Describí el problema');return}
+  const id='MUN-'+new Date().getFullYear()+'-'+ String(reclamos.length+1).padStart(5,'0');
+  const now=new Date();
+  const vence=new Date(now.getTime()+selectedSub.sla*3600000);
+  const r={
+    id,
+    vecino:document.getElementById('v-nombre').value,
+    dir:document.getElementById('v-calle').value+', '+document.getElementById('v-barrio').value,
+    cel:document.getElementById('v-cel').value,
+    email:document.getElementById('v-email').value,
+    cat:selectedCat.nombre,catId:selectedCat.id,
+    sub:selectedSub.nombre,
+    area:selectedCat.area,
+    estado:'Pendiente',
+    desc,
+    fecha:now.toLocaleDateString('es-AR'),
+    vencimiento:vence,sla:selectedSub.sla,
+    resolucion:'',
+    historial:[{estado:'Pendiente',texto:'Reclamo recibido y registrado en el sistema',fecha:now.toLocaleString('es-AR')}]
+  };
+  reclamos.unshift(r);
+  document.getElementById('exp-num').textContent=id;
+  document.getElementById('resumen-reclamo').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Vecino</div><div style="font-weight:500">${r.vecino}</div></div>
+      <div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Dirección</div><div style="font-weight:500">${r.dir}</div></div>
+      <div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Categoría</div><div style="font-weight:500">${r.cat}</div></div>
+      <div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Subcategoría</div><div style="font-weight:500">${r.sub}</div></div>
+      <div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Área ejecutora</div><div style="font-weight:500">${r.area}</div></div>
+      <div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Plazo de resolución</div><div style="font-weight:500">${r.sla<24?r.sla+'h':Math.round(r.sla/24)+' días háb.'}</div></div>
+    </div>
+    <div style="margin-top:16px;padding:14px;background:var(--gray-50);border-radius:var(--radius);font-size:14px;color:var(--gray-600)">${r.desc}</div>
+  `;
+  currentStep=4;
+  ['step1','step2','step3'].forEach(s=>document.getElementById(s).style.display='none');
+  document.getElementById('step4').style.display='block';
+  updateWizardSteps();
+  renderAdmin();
+  window.scrollTo({top:0,behavior:'smooth'});
+  showToast('✓ Reclamo registrado: '+id);
+}
+
+function nuevoReclamo(){
+  selectedCat=null; selectedSub=null; currentStep=1;
+  ['v-nombre','v-calle','v-barrio','v-cel','v-email','v-desc'].forEach(id=>document.getElementById(id).value='');
+  document.querySelectorAll('.cat-card').forEach(x=>x.classList.remove('selected'));
+  document.getElementById('subcat-section').style.display='none';
+  document.getElementById('step4').style.display='none';
+  document.getElementById('step1').style.display='block';
+  updateWizardSteps();
+}
+
+// ─── SEGUIMIENTO ─────────────────────────────────────────────────────────
+function buscarExpediente(){
+  const val=document.getElementById('s-expediente').value.trim().toUpperCase();
+  const r=reclamos.find(x=>x.id===val);
+  const res=document.getElementById('seguimiento-result');
+  if(!r){showToast('❌ Expediente no encontrado');res.style.display='none';return}
+  res.style.display='block';
+  document.getElementById('seg-num').textContent=r.id;
+  const badges={'Pendiente':'badge-blue','En proceso':'badge-orange','Resuelto':'badge-green','Vencido':'badge-red'};
+  document.getElementById('seg-badge').innerHTML=`<span class="badge ${badges[r.estado]||'badge-gray'}" style="font-size:14px;padding:6px 16px">${r.estado}</span>`;
+  const now=new Date();
+  const diff=Math.round((r.vencimiento-now)/3600000);
+  const pct=Math.min(100,Math.max(0,Math.round((1-diff/r.sla)*100)));
+  const slaCls=pct<75?'sla-ok':pct<100?'sla-warn':'sla-over';
+  document.getElementById('seg-meta').innerHTML=`
+    <div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Vecino</div><div style="font-weight:500">${r.vecino}</div></div>
+    <div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Categoría</div><div style="font-weight:500">${r.cat} — ${r.sub}</div></div>
+    <div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Área</div><div style="font-weight:500">${r.area}</div></div>
+    <div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Ingresado</div><div style="font-weight:500">${r.fecha}</div></div>
+  `;
+  document.getElementById('seg-sla-bar').innerHTML=`
+    <div style="font-size:12px;color:var(--gray-400);margin-bottom:4px">Progreso del plazo — ${diff>0?diff+' hs restantes':'vencido'}</div>
+    <div class="sla-bar"><div class="sla-fill ${slaCls}" style="width:${pct}%"></div></div>
+  `;
+  document.getElementById('seg-timeline').innerHTML=r.historial.map((h,i)=>`
+    <li class="${i===r.historial.length-1?'done':''}">
+      <div class="timeline-time">${h.fecha}</div>
+      <div class="timeline-text">${h.texto}</div>
+      <span class="badge ${i===r.historial.length-1?'badge-green':'badge-gray'}" style="margin-top:4px">${h.estado}</span>
+    </li>
+  `).join('');
+  const enc=document.getElementById('encuesta-section');
+  enc.style.display=r.estado==='Resuelto'?'block':'none';
+}
+
+// ─── ENCUESTA ────────────────────────────────────────────────────────────
+function setStar(n){
+  selectedStarVal=n;
+  document.querySelectorAll('.star').forEach((s,i)=>{
+    s.classList.toggle('lit',i<n);
+  });
+}
+
+function enviarEncuesta(){
+  if(!selectedStarVal){showToast('⭐ Seleccioná una calificación');return}
+  showToast('✓ ¡Gracias por tu opinión!');
+  document.getElementById('encuesta-section').style.display='none';
+}
+
+// ─── ADMIN ───────────────────────────────────────────────────────────────
+function renderAdmin(){
+  const total=reclamos.length;
+  const abiertos=reclamos.filter(r=>r.estado!=='Resuelto').length;
+  const resueltos=reclamos.filter(r=>r.estado==='Resuelto').length;
+  const vencidos=reclamos.filter(r=>r.estado==='Vencido'||r.vencimiento<new Date()&&r.estado!=='Resuelto').length;
+  document.getElementById('metrics-grid').innerHTML=`
+    <div class="metric-card"><div class="metric-val">${total}</div><div class="metric-label">Total de reclamos</div></div>
+    <div class="metric-card orange"><div class="metric-val">${abiertos}</div><div class="metric-label">Reclamos abiertos</div></div>
+    <div class="metric-card green"><div class="metric-val">${resueltos}</div><div class="metric-label">Resueltos</div></div>
+    <div class="metric-card red"><div class="metric-val">${vencidos}</div><div class="metric-label">Vencidos / Urgentes</div></div>
+  `;
+  filtrarAdmin();
+}
+
+function filtrarAdmin(){
+  const q=(document.getElementById('admin-search')?.value||'').toLowerCase();
+  const cat=(document.getElementById('admin-filter-cat')?.value||'');
+  const est=(document.getElementById('admin-filter-est')?.value||'');
+  const filtered=reclamos.filter(r=>{
+    const matchQ=!q||r.id.toLowerCase().includes(q)||r.vecino.toLowerCase().includes(q);
+    const matchC=!cat||r.cat===cat;
+    const matchE=!est||r.estado===est;
+    return matchQ&&matchC&&matchE;
+  });
+  const badges={'Pendiente':'badge-blue','En proceso':'badge-orange','Resuelto':'badge-green','Vencido':'badge-red'};
+  const now=new Date();
+  document.getElementById('admin-tbody').innerHTML=filtered.map(r=>{
+    const diff=Math.round((r.vencimiento-now)/3600000);
+    const pct=Math.min(100,Math.max(0,Math.round((1-diff/r.sla)*100)));
+    const slaCls=pct<75?'sla-ok':pct<100?'sla-warn':'sla-over';
+    return`<tr>
+      <td style="font-family:'DM Serif Display',serif;color:var(--brand);font-size:13px">${r.id}</td>
+      <td><div style="font-weight:500">${r.vecino}</div><div style="font-size:12px;color:var(--gray-400)">${r.dir}</div></td>
+      <td><div style="font-size:13px">${r.cat}</div><div style="font-size:12px;color:var(--gray-400)">${r.sub}</div></td>
+      <td><span class="badge ${badges[r.estado]||'badge-gray'}">${r.estado}</span></td>
+      <td style="min-width:120px">
+        <div style="font-size:11px;color:var(--gray-400)">${diff>0?diff+'h restantes':'Vencido'}</div>
+        <div class="sla-bar"><div class="sla-fill ${slaCls}" style="width:${pct}%"></div></div>
+      </td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick="adminVerReclamo('${r.id}')">Ver</button>
+        ${r.estado!=='Resuelto'?`<button class="btn btn-success btn-sm" style="margin-left:6px" onclick="adminResolver('${r.id}')">Resolver</button>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function adminVerReclamo(id){
+  const r=reclamos.find(x=>x.id===id);
+  if(!r) return;
+  const now=new Date();
+  const diff=Math.round((r.vencimiento-now)/3600000);
+  document.getElementById('modal-title').textContent=r.id+' — '+r.vecino;
+  document.getElementById('modal-body').innerHTML=`
+    <div style="display:grid;gap:12px;margin-bottom:20px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Categoría</div><div>${r.cat} — ${r.sub}</div></div>
+        <div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Área</div><div>${r.area}</div></div>
+        <div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Contacto</div><div>${r.cel||r.email||'—'}</div></div>
+        <div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Vencimiento</div><div style="color:${diff<0?'var(--red)':diff<24?'var(--orange)':'inherit'}">${diff>0?diff+'h restantes':'Vencido hace '+(Math.abs(diff))+'h'}</div></div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Descripción</div>
+        <div style="background:var(--gray-50);padding:12px;border-radius:var(--radius);font-size:14px">${r.desc}</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--brand)">Historial</div>
+      <ul class="timeline">${r.historial.map(h=>`<li><div class="timeline-time">${h.fecha}</div><div class="timeline-text">${h.texto}</div></li>`).join('')}</ul>
+    </div>
+    ${r.resolucion?`<div style="margin-top:16px;padding:14px;background:var(--green-light);border-radius:var(--radius)"><strong>Resolución:</strong> ${r.resolucion}</div>`:''}
+  `;
+  document.getElementById('admin-modal').style.display='flex';
+}
+
+function adminResolver(id){
+  const r=reclamos.find(x=>x.id===id);
+  if(!r) return;
+  document.getElementById('modal-title').textContent='Resolver — '+r.id;
+  document.getElementById('modal-body').innerHTML=`
+    <p style="font-size:14px;color:var(--gray-600);margin-bottom:16px">Registrá la acción realizada para cerrar este reclamo.</p>
+    <div class="form-group">
+      <label>Estado de resolución</label>
+      <select id="res-estado"><option value="Resuelto">Resuelto</option><option value="En proceso">En proceso</option><option value="Derivado a terceros">Derivado a terceros</option><option value="Sin solución posible">Sin solución posible</option></select>
+    </div>
+    <div class="form-group">
+      <label>Descripción de la acción tomada</label>
+      <textarea id="res-desc" placeholder="Detallá qué se hizo para resolver el reclamo..."></textarea>
+    </div>
+    <div style="display:flex;gap:12px">
+      <button class="btn btn-success" onclick="confirmarResolucion('${id}')">Guardar resolución</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+    </div>
+  `;
+  document.getElementById('admin-modal').style.display='flex';
+}
+
+function confirmarResolucion(id){
+  const r=reclamos.find(x=>x.id===id);
+  if(!r) return;
+  const est=document.getElementById('res-estado').value;
+  const desc=document.getElementById('res-desc').value.trim();
+  if(!desc){showToast('⚠️ Describí la acción tomada');return}
+  r.estado=est;
+  r.resolucion=desc;
+  r.historial.push({estado:est,texto:desc,fecha:new Date().toLocaleString('es-AR')});
+  closeModal();
+  renderAdmin();
+  showToast('✓ Reclamo actualizado: '+est);
+}
+
+function closeModal(){document.getElementById('admin-modal').style.display='none'}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, BarChart2, Globe, ChevronRight } from 'lucide-react';
+import { ArrowLeft, BarChart2, Globe, MessageSquare, PieChart, Vote, Map, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ObservatorioDemo from '../components/ObservatorioDemo';
+import SistemaReclamosDemo from '../components/SistemaReclamosDemo';
+import ChatbotDemo from '../components/ChatbotDemo';
+import OpinionPublicaDemo from '../components/OpinionPublicaDemo';
+import PresupuestoParticipativoDemo from '../components/PresupuestoParticipativoDemo';
+import MapaObrasDemo from '../components/MapaObrasDemo';
 
 const products = [
   {
@@ -19,8 +24,39 @@ const products = [
     title: 'Desarrollo de Tecnología',
     subtitle: 'Sistema de gestión de reclamos',
     description: 'Plataforma de seguimiento y resolución de reclamos ciudadanos, diseñada para organismos públicos y privados.',
-    tag: 'Próximamente',
-    comingSoon: true,
+    tag: 'Sistema de gestión',
+  },
+  {
+    key: 'participacion',
+    icon: Vote,
+    title: 'Participación Ciudadana',
+    subtitle: 'Presupuesto Participativo Digital',
+    description: 'Gestión de votos y asignación de presupuesto a los proyectos que transformarán tu ciudad.',
+    tag: 'Democracia Digital',
+  },
+  {
+    key: 'obras',
+    icon: Map,
+    title: 'Transparencia de Obras',
+    subtitle: 'Mapa interactivo de obra pública',
+    description: 'Seguimiento físico y financiero de proyectos de infraestructura con comparativas visuales y datos abiertos para el ciudadano.',
+    tag: 'Transparencia',
+  },
+  {
+    key: 'opinion',
+    icon: PieChart,
+    title: 'Análisis de Opinión',
+    subtitle: 'Estudios de opinión pública y encuestas',
+    description: 'Visualizá el humor social, preocupaciones ciudadanas y percepción de imagen mediante dashboards analíticos de alta precisión.',
+    tag: 'Análisis Estratégico',
+  },
+  {
+    key: 'chatbot',
+    icon: MessageSquare,
+    title: 'Asistente de IA',
+    subtitle: 'Chatbot municipal inteligente',
+    description: 'Atención al ciudadano 24/7 mediante inteligencia artificial. Resolución de dudas frecuentes, trámites y derivación inteligente.',
+    tag: 'Inteligencia Artificial',
   },
 ];
 
@@ -48,30 +84,22 @@ const Demos = () => {
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
             {products.map((p) => {
               const Icon = p.icon;
               return (
                 <motion.div
                   key={p.key}
-                  whileHover={!p.comingSoon ? { y: -6 } : {}}
-                  onClick={() => !p.comingSoon && setActive(p.key)}
-                  className={`glass-elevated rounded-3xl p-8 flex flex-col gap-6 border border-white/5 transition-all duration-300 ${
-                    p.comingSoon
-                      ? 'opacity-60 cursor-not-allowed'
-                      : 'cursor-pointer hover:border-[var(--color-brand-cyan)]/30'
-                  }`}
+                  whileHover={{ y: -6 }}
+                  onClick={() => setActive(p.key)}
+                  className="glass-elevated rounded-3xl p-8 flex flex-col gap-6 border border-white/5 transition-all duration-300 cursor-pointer hover:border-[var(--color-brand-cyan)]/30"
                 >
                   <div className="flex items-start justify-between">
                     <div className="w-14 h-14 rounded-2xl bg-[var(--color-brand-cyan)]/10 flex items-center justify-center">
                       <Icon size={26} className="text-[var(--color-brand-cyan)]" />
                     </div>
-                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                      p.comingSoon
-                        ? 'bg-white/5 text-brand-secondary'
-                        : 'bg-[var(--color-brand-cyan)]/10 text-[var(--color-brand-cyan)]'
-                    }`}>
+                    <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[var(--color-brand-cyan)]/10 text-[var(--color-brand-cyan)]">
                       {p.tag}
                     </span>
                   </div>
@@ -79,14 +107,12 @@ const Demos = () => {
                   <div>
                     <h2 className="text-xl font-display font-bold text-white mb-1">{p.title}</h2>
                     <p className="text-sm text-[var(--color-brand-cyan)] mb-3 font-medium">{p.subtitle}</p>
-                    <p className="text-brand-secondary text-sm leading-relaxed">{p.description}</p>
+                    <p className="text-brand-secondary text-sm leading-relaxed line-clamp-3">{p.description}</p>
                   </div>
 
-                  {!p.comingSoon && (
-                    <div className="flex items-center gap-2 text-[var(--color-brand-cyan)] text-sm font-semibold mt-auto">
-                      Ver demo <ChevronRight size={16} />
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 text-[var(--color-brand-cyan)] text-sm font-semibold mt-auto">
+                    Ver demo <ChevronRight size={16} />
+                  </div>
                 </motion.div>
               );
             })}
@@ -123,8 +149,67 @@ const Demos = () => {
               )}
 
               {active === 'tecnologia' && (
-                <div className="flex items-center justify-center py-32">
-                  <p className="text-brand-secondary">Demo próximamente disponible.</p>
+                <div>
+                  <div className="mb-6">
+                    <span className="text-[var(--color-brand-cyan)] text-xs font-semibold tracking-widest uppercase">Tecnología Aplicada</span>
+                    <h2 className="text-2xl md:text-3xl font-display font-bold mt-1">Gestión de Reclamos Ciudadanos</h2>
+                    <p className="text-brand-secondary text-sm mt-2 max-w-lg">
+                      Visualizá cómo nuestra plataforma centraliza incidencias, optimiza tiempos de respuesta y mejora la comunicación con el vecino.
+                    </p>
+                  </div>
+                  <SistemaReclamosDemo />
+                </div>
+              )}
+
+              {active === 'participacion' && (
+                <div>
+                  <div className="mb-6">
+                    <span className="text-[var(--color-brand-cyan)] text-xs font-semibold tracking-widest uppercase">Participación Ciudadana</span>
+                    <h2 className="text-2xl md:text-3xl font-display font-bold mt-1">Presupuesto Participativo Digital</h2>
+                    <p className="text-brand-secondary text-sm mt-2 max-w-lg">
+                      Gestión de votos y asignación de presupuesto a los proyectos que transformarán tu ciudad.
+                    </p>
+                  </div>
+                  <PresupuestoParticipativoDemo />
+                </div>
+              )}
+
+              {active === 'obras' && (
+                <div>
+                  <div className="mb-6">
+                    <span className="text-[var(--color-brand-cyan)] text-xs font-semibold tracking-widest uppercase">Transparencia</span>
+                    <h2 className="text-2xl md:text-3xl font-display font-bold mt-1">Portal de Seguimiento de Obras</h2>
+                    <p className="text-brand-secondary text-sm mt-2 max-w-lg">
+                      Explorá el progreso físico y financiero de la infraestructura pública con datos georreferenciados.
+                    </p>
+                  </div>
+                  <MapaObrasDemo />
+                </div>
+              )}
+
+              {active === 'opinion' && (
+                <div>
+                  <div className="mb-6">
+                    <span className="text-[var(--color-brand-cyan)] text-xs font-semibold tracking-widest uppercase">Análisis Estratégico</span>
+                    <h2 className="text-2xl md:text-3xl font-display font-bold mt-1">Dashboard de Opinión Pública</h2>
+                    <p className="text-brand-secondary text-sm mt-2 max-w-lg">
+                      Explorá el sentimiento social, los problemas prioritarios y la percepción de imagen mediante analítica avanzada.
+                    </p>
+                  </div>
+                  <OpinionPublicaDemo />
+                </div>
+              )}
+
+              {active === 'chatbot' && (
+                <div>
+                  <div className="mb-6">
+                    <span className="text-[var(--color-brand-cyan)] text-xs font-semibold tracking-widest uppercase">Inteligencia Artificial</span>
+                    <h2 className="text-2xl md:text-3xl font-display font-bold mt-1">Asistente Virtual ConsulBot</h2>
+                    <p className="text-brand-secondary text-sm mt-2 max-w-lg">
+                      Interactuá con nuestro agente entrenado para resolver dudas municipales, consultar requisitos y realizar trámites de forma automática.
+                    </p>
+                  </div>
+                  <ChatbotDemo />
                 </div>
               )}
             </motion.div>
