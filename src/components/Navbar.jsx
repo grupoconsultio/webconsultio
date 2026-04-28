@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ChevronRight } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import logo from '../assets/logo.png';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,6 +23,15 @@ const Navbar = () => {
     { name: 'Blog', href: '/blog' },
     { name: 'Contacto', href: '#contact' },
   ];
+
+  const handleComenzar = () => {
+    setIsOpen(false);
+    if (location.pathname !== '/') {
+      window.location.href = '/#contact';
+    } else {
+      document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
     <nav 
@@ -74,7 +82,7 @@ const Navbar = () => {
           <motion.button
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={handleComenzar}
             className="btn-primary py-2 px-6 text-sm"
           >
             Comenzar
@@ -124,10 +132,7 @@ const Navbar = () => {
                 );
               })}
               <button 
-                onClick={() => {
-                  setIsOpen(false);
-                  document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
-                }}
+                onClick={handleComenzar}
                 className="btn-primary w-full mt-4"
               >
                 Comenzar
