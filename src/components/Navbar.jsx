@@ -74,6 +74,7 @@ const Navbar = () => {
           <motion.button
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
+            onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
             className="btn-primary py-2 px-6 text-sm"
           >
             Comenzar
@@ -122,7 +123,15 @@ const Navbar = () => {
                   </a>
                 );
               })}
-              <button className="btn-primary w-full mt-4">Comenzar</button>
+              <button 
+                onClick={() => {
+                  setIsOpen(false);
+                  document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="btn-primary w-full mt-4"
+              >
+                Comenzar
+              </button>
             </div>
           </motion.div>
         )}

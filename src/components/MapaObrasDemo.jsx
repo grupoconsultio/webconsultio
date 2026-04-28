@@ -42,7 +42,7 @@ const WorkCard = ({ work }) => {
           </div>
         </div>
         <div className="text-right">
-          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border" 
+          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border whitespace-nowrap" 
                 style={{ backgroundColor: `${statusColor}20`, color: statusColor, borderColor: `${statusColor}30` }}>
             {work.status}
           </span>

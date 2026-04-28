@@ -75,7 +75,7 @@ const Demos = () => {
           <span className="block text-[var(--color-brand-cyan)] font-semibold tracking-widest uppercase text-xs mb-3">Demostraciones</span>
           <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">Nuestros Productos</h1>
           <p className="text-brand-secondary max-w-xl leading-relaxed">
-            Explorá las herramientas que desarrollamos para gobiernos y organizaciones. Seleccioná un producto para ver la demo en acción.
+            Explorá algunas de las herramientas que desarrollamos. Estos son proyectos modelo: diseñamos y adaptamos cada solución a medida según las necesidades específicas de cada organización.
           </p>
         </div>
 
