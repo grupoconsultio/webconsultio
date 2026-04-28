@@ -112,10 +112,10 @@ const Hero = () => {
 
             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-10 md:justify-start justify-center">
               <button
-                onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })}
                 className="btn-primary flex items-center gap-2 group w-full sm:w-auto justify-center"
               >
-                Comenzar
+                Conoce Nuestros Servicios
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </button>
 
