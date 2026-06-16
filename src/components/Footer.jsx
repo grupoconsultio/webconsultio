@@ -51,8 +51,6 @@ const Footer = () => {
             <ul className="flex flex-col gap-4">
               <li><a href="#about" className="text-sm text-brand-secondary hover:text-[var(--color-brand-cyan)] transition-colors">Quiénes Somos</a></li>
               <li><a href="#services" className="text-sm text-brand-secondary hover:text-[var(--color-brand-cyan)] transition-colors">Servicios</a></li>
-              <li><a href="#testimonials" className="text-sm text-brand-secondary hover:text-[var(--color-brand-cyan)] transition-colors">Testimonios</a></li>
-              <li><a href="/blog" className="text-sm text-brand-secondary hover:text-[var(--color-brand-cyan)] transition-colors">Blog</a></li>
               <li><a href="#contact" className="text-sm text-brand-secondary hover:text-[var(--color-brand-cyan)] transition-colors">Contacto</a></li>
             </ul>
           </div>

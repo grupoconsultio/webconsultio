@@ -4,12 +4,10 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import About from './components/About';
 import Services from './components/Services';
-import Testimonials from './components/Testimonials';
 import CTA from './components/CTA';
 import Footer from './components/Footer';
 import Admin from './pages/Admin';
 import AdminLogin from './pages/AdminLogin';
-import Blog from './pages/Blog';
 import Demos from './pages/Demos';
 import { motion, useScroll, useSpring } from 'framer-motion';
 
@@ -39,7 +37,6 @@ const MainLanding = () => {
         >
           <Services />
         </motion.div>
-        <Testimonials />
         <CTA />
       </main>
       <Footer />
@@ -54,7 +51,6 @@ function App() {
         <Route path="/" element={<MainLanding />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<Admin />} />
-        <Route path="/blog" element={<><Navbar /><Blog /><Footer /></>} />
         <Route path="/demos" element={<><Navbar /><Demos /><Footer /></>} />
       </Routes>
 
