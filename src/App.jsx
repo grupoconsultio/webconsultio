@@ -9,6 +9,7 @@ import Footer from './components/Footer';
 import Admin from './pages/Admin';
 import AdminLogin from './pages/AdminLogin';
 import Demos from './pages/Demos';
+import MapaIndicadores from './pages/MapaIndicadores';
 import { motion, useScroll, useSpring } from 'framer-motion';
 
 const MainLanding = () => {
@@ -52,6 +53,7 @@ function App() {
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/demos" element={<><Navbar /><Demos /><Footer /></>} />
+        <Route path="/mapa" element={<><Navbar /><MapaIndicadores /><Footer /></>} />
       </Routes>
 
       {/* Global Background visual flair */}

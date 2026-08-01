@@ -19,6 +19,7 @@ const Navbar = () => {
   const navLinks = [
     { name: 'Nosotros', href: '#about' },
     { name: 'Servicios', href: '#services' },
+    { name: 'Indicadores', href: '/mapa' },
     { name: 'Contacto', href: '#contact' },
   ];
 
