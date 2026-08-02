@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import About from './components/About';
@@ -11,6 +11,14 @@ import AdminLogin from './pages/AdminLogin';
 import Demos from './pages/Demos';
 import MapaIndicadores from './pages/MapaIndicadores';
 import { motion, useScroll, useSpring } from 'framer-motion';
+
+const ProtectedRoute = ({ children }) => {
+  const isAuthenticated = sessionStorage.getItem('adminAuth') === '1';
+  if (!isAuthenticated) {
+    return <Navigate to="/admin/login" replace />;
+  }
+  return children;
+};
 
 const MainLanding = () => {
   const { scrollYProgress } = useScroll();
@@ -51,9 +59,9 @@ function App() {
       <Routes>
         <Route path="/" element={<MainLanding />} />
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={<Admin />} />
+        <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/demos" element={<><Navbar /><Demos /><Footer /></>} />
-        <Route path="/mapa" element={<><Navbar /><MapaIndicadores /><Footer /></>} />
+        <Route path="/mapa" element={<ProtectedRoute><Navbar /><MapaIndicadores /><Footer /></ProtectedRoute>} />
       </Routes>
 
       {/* Global Background visual flair */}
@@ -66,4 +74,3 @@ function App() {
 }
 
 export default App;
-

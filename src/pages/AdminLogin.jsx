@@ -18,8 +18,25 @@ const AdminLogin = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (username === 'grupoconsultio' && password === 'CoNSUlt1026') {
+    const cleanUser = username.trim();
+    
+    // Super-admin por defecto
+    if (cleanUser === 'grupoconsultio' && password === 'CoNSUlt1026') {
       sessionStorage.setItem('adminAuth', '1');
+      sessionStorage.setItem('userRole', 'administrador');
+      sessionStorage.setItem('userName', 'grupoconsultio');
+      navigate('/admin');
+      return;
+    }
+
+    // Usuarios registrados dinámicamente
+    const appUsers = JSON.parse(localStorage.getItem('appUsers') || '[]');
+    const foundUser = appUsers.find(u => u.username.toLowerCase() === cleanUser.toLowerCase() && u.password === password);
+
+    if (foundUser) {
+      sessionStorage.setItem('adminAuth', '1');
+      sessionStorage.setItem('userRole', foundUser.role || 'lector');
+      sessionStorage.setItem('userName', foundUser.username);
       navigate('/admin');
     } else {
       setError('Usuario o contraseña incorrectos.');
