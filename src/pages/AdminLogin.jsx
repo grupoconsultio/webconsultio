@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Lock, User, Eye, EyeOff } from 'lucide-react';
+import { Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 const AdminLogin = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [error, setError] = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -16,8 +19,11 @@ const AdminLogin = () => {
     }
   }, [navigate]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
+
     const cleanUser = username.trim();
     const cleanPass = password.trim();
     
@@ -26,22 +32,46 @@ const AdminLogin = () => {
       sessionStorage.setItem('adminAuth', '1');
       sessionStorage.setItem('userRole', 'administrador');
       sessionStorage.setItem('userName', 'grupoconsultio');
+      setLoading(false);
       navigate('/admin');
       return;
     }
 
-    // Usuarios registrados dinámicamente
+    try {
+      // 1. Consultar Firestore en la nube
+      const querySnapshot = await getDocs(collection(db, 'users'));
+      const firebaseUsers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      const foundUser = firebaseUsers.find(
+        u => (u.username || '').trim().toLowerCase() === cleanUser.toLowerCase() && (u.password || '').trim() === cleanPass
+      );
+
+      if (foundUser) {
+        sessionStorage.setItem('adminAuth', '1');
+        sessionStorage.setItem('userRole', foundUser.role || 'lector');
+        sessionStorage.setItem('userName', foundUser.username);
+        setLoading(false);
+        navigate('/admin');
+        return;
+      }
+    } catch (err) {
+      console.warn('Fallback a almacenamiento local por error en Firebase:', err);
+    }
+
+    // 2. Fallback a usuarios registrados en localStorage
     const appUsers = JSON.parse(localStorage.getItem('appUsers') || '[]');
-    const foundUser = appUsers.find(
-      u => u.username.trim().toLowerCase() === cleanUser.toLowerCase() && u.password.trim() === cleanPass
+    const foundLocal = appUsers.find(
+      u => (u.username || '').trim().toLowerCase() === cleanUser.toLowerCase() && (u.password || '').trim() === cleanPass
     );
 
-    if (foundUser) {
+    if (foundLocal) {
       sessionStorage.setItem('adminAuth', '1');
-      sessionStorage.setItem('userRole', foundUser.role || 'lector');
-      sessionStorage.setItem('userName', foundUser.username);
+      sessionStorage.setItem('userRole', foundLocal.role || 'lector');
+      sessionStorage.setItem('userName', foundLocal.username);
+      setLoading(false);
       navigate('/admin');
     } else {
+      setLoading(false);
       setError('Usuario o contraseña incorrectos.');
     }
   };
@@ -112,8 +142,8 @@ const AdminLogin = () => {
             </motion.p>
           )}
 
-          <button type="submit" className="btn-primary w-full mt-2">
-            Ingresar
+          <button type="submit" disabled={loading} className="btn-primary w-full mt-2 flex items-center justify-center gap-2">
+            {loading ? <Loader2 size={18} className="animate-spin" /> : 'Ingresar'}
           </button>
         </form>
       </motion.div>

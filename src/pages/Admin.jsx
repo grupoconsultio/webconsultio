@@ -3,6 +3,9 @@ import { motion } from 'framer-motion';
 import { Users, Mail, Plus, Trash2, Home, Calendar, Menu, X, LogOut, ShieldCheck, FileBarChart, Folder, ExternalLink, UserPlus, FolderPlus, MapPin, Eye } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { db } from '../firebase';
+import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
+
 const DEFAULT_SURVEYS = [
   {
     id: 'rio-cuarto-mapa',
@@ -58,15 +61,41 @@ const Admin = () => {
     setNewsletters(JSON.parse(localStorage.getItem('newsletterSubs') || '[]'));
     setClients(JSON.parse(localStorage.getItem('clients') || '[]'));
     setMeetings(JSON.parse(localStorage.getItem('meetings') || '[]'));
-    setAppUsers(JSON.parse(localStorage.getItem('appUsers') || '[]'));
 
-    const storedSurveys = JSON.parse(localStorage.getItem('appSurveys') || 'null');
-    if (!storedSurveys || storedSurveys.length === 0) {
-      setSurveys(DEFAULT_SURVEYS);
-      localStorage.setItem('appSurveys', JSON.stringify(DEFAULT_SURVEYS));
-    } else {
-      setSurveys(storedSurveys);
-    }
+    // Cargar Usuarios de Firestore
+    const fetchUsers = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'users'));
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setAppUsers(list);
+        localStorage.setItem('appUsers', JSON.stringify(list));
+      } catch (err) {
+        console.warn('Fallback local para usuarios:', err);
+        setAppUsers(JSON.parse(localStorage.getItem('appUsers') || '[]'));
+      }
+    };
+
+    // Cargar Encuestas de Firestore
+    const fetchSurveys = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'surveys'));
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (list.length === 0) {
+          setSurveys(DEFAULT_SURVEYS);
+          localStorage.setItem('appSurveys', JSON.stringify(DEFAULT_SURVEYS));
+        } else {
+          setSurveys(list);
+          localStorage.setItem('appSurveys', JSON.stringify(list));
+        }
+      } catch (err) {
+        console.warn('Fallback local para encuestas:', err);
+        const storedSurveys = JSON.parse(localStorage.getItem('appSurveys') || 'null');
+        setSurveys(storedSurveys && storedSurveys.length > 0 ? storedSurveys : DEFAULT_SURVEYS);
+      }
+    };
+
+    fetchUsers();
+    fetchSurveys();
   }, [navigate]);
 
   const handleLogout = () => {
@@ -112,7 +141,7 @@ const Admin = () => {
   };
 
   /* Usuarios (Solo Admin) */
-  const handleAddUser = (e) => {
+  const handleAddUser = async (e) => {
     e.preventDefault();
     const cleanName = newUser.username.trim();
     const cleanPass = newUser.password.trim();
@@ -123,7 +152,7 @@ const Admin = () => {
       return;
     }
 
-    if (appUsers.some(u => u.username.trim().toLowerCase() === cleanName.toLowerCase())) {
+    if (appUsers.some(u => (u.username || '').trim().toLowerCase() === cleanName.toLowerCase())) {
       alert('Ya existe un usuario con este nombre.');
       return;
     }
@@ -132,34 +161,68 @@ const Admin = () => {
       username: cleanName,
       password: cleanPass,
       role: newUser.role || 'lector',
-      id: Date.now()
+      createdAt: new Date().toISOString()
     };
 
-    const updated = [...appUsers, userObj];
-    setAppUsers(updated);
-    localStorage.setItem('appUsers', JSON.stringify(updated));
+    try {
+      const docRef = await addDoc(collection(db, 'users'), userObj);
+      const created = { ...userObj, id: docRef.id };
+      const updated = [...appUsers, created];
+      setAppUsers(updated);
+      localStorage.setItem('appUsers', JSON.stringify(updated));
+    } catch (err) {
+      console.warn('Error guardando en Firestore, guardando localmente:', err);
+      const created = { ...userObj, id: Date.now().toString() };
+      const updated = [...appUsers, created];
+      setAppUsers(updated);
+      localStorage.setItem('appUsers', JSON.stringify(updated));
+    }
+
     setNewUser({ username: '', password: '', role: 'lector' });
   };
 
-  const handleDeleteUser = (id) => {
+  const handleDeleteUser = async (id) => {
+    try {
+      await deleteDoc(doc(db, 'users', id));
+    } catch (err) {
+      console.warn('Error eliminando en Firestore:', err);
+    }
     const updated = appUsers.filter(u => u.id !== id);
     setAppUsers(updated);
     localStorage.setItem('appUsers', JSON.stringify(updated));
   };
 
   /* Encuestas */
-  const handleAddSurvey = (e) => {
+  const handleAddSurvey = async (e) => {
     e.preventDefault();
     if (!newSurvey.title || !newSurvey.link) return;
     const isInternal = newSurvey.link.startsWith('/');
-    const created = [...surveys, { ...newSurvey, id: Date.now(), isInternal }];
-    setSurveys(created);
-    localStorage.setItem('appSurveys', JSON.stringify(created));
+    const surveyObj = { ...newSurvey, isInternal, createdAt: new Date().toISOString() };
+
+    try {
+      const docRef = await addDoc(collection(db, 'surveys'), surveyObj);
+      const created = { ...surveyObj, id: docRef.id };
+      const updated = [...surveys, created];
+      setSurveys(updated);
+      localStorage.setItem('appSurveys', JSON.stringify(updated));
+    } catch (err) {
+      console.warn('Error guardando encuesta en Firestore:', err);
+      const created = { ...surveyObj, id: Date.now().toString() };
+      const updated = [...surveys, created];
+      setSurveys(updated);
+      localStorage.setItem('appSurveys', JSON.stringify(updated));
+    }
+
     setNewSurvey({ title: '', category: 'Río Cuarto', description: '', link: '/mapa', badge: 'Río Cuarto' });
     setShowSurveyForm(false);
   };
 
-  const handleDeleteSurvey = (id) => {
+  const handleDeleteSurvey = async (id) => {
+    try {
+      await deleteDoc(doc(db, 'surveys', id));
+    } catch (err) {
+      console.warn('Error eliminando encuesta en Firestore:', err);
+    }
     const updated = surveys.filter(s => s.id !== id);
     setSurveys(updated);
     localStorage.setItem('appSurveys', JSON.stringify(updated));
