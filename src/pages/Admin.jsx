@@ -170,12 +170,14 @@ const Admin = () => {
       const updated = [...appUsers, created];
       setAppUsers(updated);
       localStorage.setItem('appUsers', JSON.stringify(updated));
+      alert(`¡Usuario "${cleanName}" creado exitosamente en la nube (Firebase)!`);
     } catch (err) {
       console.warn('Error guardando en Firestore, guardando localmente:', err);
       const created = { ...userObj, id: Date.now().toString() };
       const updated = [...appUsers, created];
       setAppUsers(updated);
       localStorage.setItem('appUsers', JSON.stringify(updated));
+      alert(`Usuario "${cleanName}" creado localmente. (Nota: Para sincronización en la nube verifique conexión/reglas de Firebase).`);
     }
 
     setNewUser({ username: '', password: '', role: 'lector' });
