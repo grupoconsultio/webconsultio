@@ -303,7 +303,7 @@ const MapaIndicadores = () => {
   return (
     <>
       {/* ── Encabezado de página (dark, estilo sitio) ────────── */}
-      <section className="pt-32 pb-10 bg-brand-bg border-b border-white/5">
+      <section className="pt-10 pb-10 bg-brand-bg border-b border-white/5">
         <div className="container mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -311,10 +311,10 @@ const MapaIndicadores = () => {
             transition={{ duration: 0.5 }}
           >
             <Link
-              to="/"
+              to="/admin"
               className="inline-flex items-center gap-2 text-brand-secondary hover:text-[var(--color-brand-cyan)] transition-colors text-sm mb-8"
             >
-              <ArrowLeft size={16} /> Volver al inicio
+              <ArrowLeft size={16} /> Volver al Panel de Administración
             </Link>
 
             <span className="block text-[var(--color-brand-cyan)] font-semibold tracking-widest uppercase text-xs mb-3">

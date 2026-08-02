@@ -61,7 +61,7 @@ function App() {
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/demos" element={<><Navbar /><Demos /><Footer /></>} />
-        <Route path="/mapa" element={<ProtectedRoute><Navbar /><MapaIndicadores /><Footer /></ProtectedRoute>} />
+        <Route path="/mapa" element={<ProtectedRoute><MapaIndicadores /></ProtectedRoute>} />
       </Routes>
 
       {/* Global Background visual flair */}
