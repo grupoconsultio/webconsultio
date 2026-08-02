@@ -150,7 +150,8 @@
 
 /* ── Sidebar (índice) ────────────────────────────────────── */
 .mapa-editorial aside {
-  flex: 0 0 288px;
+  flex: 0 0 310px;
+  width: 310px;
   background: var(--paper);
   border-right: 1px solid var(--filete);
   overflow-y: auto;
@@ -165,7 +166,7 @@
 
 .mapa-editorial .grp h2 {
   margin: 0 0 var(--s2);
-  padding: 0 var(--s5);
+  padding: 0 20px;
   font-family: var(--sans-mapa);
   font-weight: 600;
   font-size: 10px;
@@ -188,7 +189,7 @@
   gap: 10px;
   width: 100%;
   text-align: left;
-  padding: 7px var(--s5);
+  padding: 9px 20px;
   background: none;
   border: 0;
   color: var(--tinta);
@@ -281,7 +282,8 @@
 .mapa-editorial .mapwrap {
   flex: 1 1 auto;
   position: relative;
-  min-height: 380px;
+  height: 500px !important;
+  min-height: 500px !important;
   background: var(--paper-2);
 }
 
@@ -361,14 +363,16 @@
 .mapa-editorial .card {
   position: absolute;
   z-index: var(--z-card);
-  top: var(--s4);
-  right: var(--s4);
+  top: 16px;
+  right: 16px;
   width: 272px;
+  max-width: calc(100% - 32px);
   background: var(--paper);
   border: 1px solid var(--filete);
   border-top: 2px solid var(--grafito);
   box-shadow: var(--sombra);
   padding: var(--s3) var(--s4) var(--s3);
+  border-radius: 8px;
   animation: mapa-aparecer .28s var(--tr) both;
 }
 
@@ -487,11 +491,13 @@
 .mapa-editorial .legend {
   position: absolute;
   z-index: var(--z-leg);
-  left: var(--s3);
-  bottom: var(--s3);
-  background: var(--paper);
+  left: 16px;
+  bottom: 16px;
+  background: rgba(253, 253, 252, 0.95);
+  backdrop-filter: blur(8px);
   border: 1px solid var(--filete);
-  padding: var(--s2) var(--s3);
+  border-radius: 8px;
+  padding: 10px 14px;
   box-shadow: var(--sombra);
 }
 
@@ -507,6 +513,8 @@
 .mapa-editorial .ramp {
   display: flex;
   border: 1px solid var(--filete);
+  border-radius: 3px;
+  overflow: hidden;
 }
 
 .mapa-editorial .ramp div { width: 32px; height: 9px; }
@@ -532,7 +540,7 @@
 
 .mapa-editorial .rcard {
   background: var(--paper);
-  padding: var(--s3) var(--s4);
+  padding: 16px 20px !important;
   cursor: pointer;
   border: 0;
   border-right: 1px solid var(--filete);
@@ -540,6 +548,11 @@
   color: var(--tinta);
   font: inherit;
   position: relative;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  min-height: 100px !important;
+  box-sizing: border-box !important;
   transition: background var(--tr);
 }
 
@@ -580,7 +593,7 @@
   font-weight: 600;
   font-size: 12.5px;
   letter-spacing: .02em;
-  margin: 3px 0 2px;
+  margin: 4px 0 2px;
 }
 
 .mapa-editorial .rcard .rv {
@@ -603,10 +616,15 @@
 }
 
 .mapa-editorial .rcard .rb {
-  height: 2px;
-  background: var(--paper-2);
-  margin-top: var(--s2);
-  overflow: hidden;
+  display: block !important;
+  width: 100% !important;
+  height: 6px !important;
+  max-height: 6px !important;
+  min-height: 6px !important;
+  background: rgba(0, 0, 0, 0.08) !important;
+  margin-top: 10px !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
 }
 
 .mapa-editorial .rcard .rb i {

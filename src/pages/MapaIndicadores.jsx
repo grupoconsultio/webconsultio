@@ -350,15 +350,16 @@ const MapaIndicadores = () => {
         </div>
       </section>
 
-      {/* ── Mapa editorial (full-width, estilo papel) ─────────── */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.4, delay: 0.2 }}
-        ref={mapContainerRef}
-        className="mapa-editorial"
-        style={{ height: 'calc(100vh - 80px)', minHeight: 600 }}
-      >
+      {/* ── Mapa editorial (contenedor estilizado) ─────────── */}
+      <section className="pb-16 bg-brand-bg">
+        <div className="container mx-auto px-4 md:px-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            ref={mapContainerRef}
+            className="mapa-editorial shadow-2xl rounded-2xl border border-white/10 overflow-hidden"
+          >
         {/* Masthead editorial */}
         <div className="mapa-header">
           <span className="marca" aria-label="Grupo Consultio">
@@ -424,6 +425,8 @@ const MapaIndicadores = () => {
           <span className="fm">Grupo Consultio ® 2026 — Río Cuarto, CBA · grupoconsultio.com</span>
         </div>
       </motion.div>
+    </div>
+  </section>
     </>
   );
 };
