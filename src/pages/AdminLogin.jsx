@@ -19,9 +19,10 @@ const AdminLogin = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const cleanUser = username.trim();
+    const cleanPass = password.trim();
     
     // Super-admin por defecto
-    if (cleanUser === 'grupoconsultio' && password === 'CoNSUlt1026') {
+    if (cleanUser.toLowerCase() === 'grupoconsultio' && cleanPass === 'CoNSUlt1026') {
       sessionStorage.setItem('adminAuth', '1');
       sessionStorage.setItem('userRole', 'administrador');
       sessionStorage.setItem('userName', 'grupoconsultio');
@@ -31,7 +32,9 @@ const AdminLogin = () => {
 
     // Usuarios registrados dinámicamente
     const appUsers = JSON.parse(localStorage.getItem('appUsers') || '[]');
-    const foundUser = appUsers.find(u => u.username.toLowerCase() === cleanUser.toLowerCase() && u.password === password);
+    const foundUser = appUsers.find(
+      u => u.username.trim().toLowerCase() === cleanUser.toLowerCase() && u.password.trim() === cleanPass
+    );
 
     if (foundUser) {
       sessionStorage.setItem('adminAuth', '1');

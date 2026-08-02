@@ -114,19 +114,28 @@ const Admin = () => {
   /* Usuarios (Solo Admin) */
   const handleAddUser = (e) => {
     e.preventDefault();
-    if (!newUser.username || !newUser.password) return;
+    const cleanName = newUser.username.trim();
+    const cleanPass = newUser.password.trim();
+    if (!cleanName || !cleanPass) return;
 
-    if (newUser.username.toLowerCase() === 'grupoconsultio') {
+    if (cleanName.toLowerCase() === 'grupoconsultio') {
       alert('El nombre de usuario "grupoconsultio" es un super-administrador reservado.');
       return;
     }
 
-    if (appUsers.some(u => u.username.toLowerCase() === newUser.username.toLowerCase())) {
+    if (appUsers.some(u => u.username.trim().toLowerCase() === cleanName.toLowerCase())) {
       alert('Ya existe un usuario con este nombre.');
       return;
     }
 
-    const updated = [...appUsers, { ...newUser, id: Date.now() }];
+    const userObj = {
+      username: cleanName,
+      password: cleanPass,
+      role: newUser.role || 'lector',
+      id: Date.now()
+    };
+
+    const updated = [...appUsers, userObj];
     setAppUsers(updated);
     localStorage.setItem('appUsers', JSON.stringify(updated));
     setNewUser({ username: '', password: '', role: 'lector' });
