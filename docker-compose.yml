@@ -17,3 +17,5 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-msodtssapus5soxz}
       - DB_NAME=${DB_NAME:-mysql}
       - CORS_ORIGIN=*
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
