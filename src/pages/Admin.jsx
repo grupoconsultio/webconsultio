@@ -8,6 +8,15 @@ import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore'
 
 const DEFAULT_SURVEYS = [
   {
+    id: 'visita-papal-dashboard',
+    title: 'Visita Papal a la Argentina',
+    category: 'Opinión Pública',
+    description: 'Dashboard de Business Intelligence con métricas en tiempo real, matriz de impactos y auditoría de sorteo.',
+    link: '/admin/encuesta-papa',
+    isInternal: true,
+    badge: 'Nacional'
+  },
+  {
     id: 'rio-cuarto-mapa',
     title: 'Encuesta Río Cuarto',
     category: 'Río Cuarto',
@@ -80,17 +89,25 @@ const Admin = () => {
       try {
         const snap = await getDocs(collection(db, 'surveys'));
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        if (list.length === 0) {
-          setSurveys(DEFAULT_SURVEYS);
-          localStorage.setItem('appSurveys', JSON.stringify(DEFAULT_SURVEYS));
-        } else {
-          setSurveys(list);
-          localStorage.setItem('appSurveys', JSON.stringify(list));
-        }
+        const merged = [...DEFAULT_SURVEYS];
+        list.forEach(item => {
+          if (!merged.some(m => m.id === item.id)) {
+            merged.push(item);
+          }
+        });
+        setSurveys(merged);
+        localStorage.setItem('appSurveys', JSON.stringify(merged));
       } catch (err) {
         console.warn('Fallback local para encuestas:', err);
-        const storedSurveys = JSON.parse(localStorage.getItem('appSurveys') || 'null');
-        setSurveys(storedSurveys && storedSurveys.length > 0 ? storedSurveys : DEFAULT_SURVEYS);
+        const storedSurveys = JSON.parse(localStorage.getItem('appSurveys') || '[]');
+        const merged = [...DEFAULT_SURVEYS];
+        storedSurveys.forEach(item => {
+          if (!merged.some(m => m.id === item.id)) {
+            merged.push(item);
+          }
+        });
+        setSurveys(merged);
+        localStorage.setItem('appSurveys', JSON.stringify(merged));
       }
     };
 
@@ -397,7 +414,7 @@ const Admin = () => {
                       <div>
                         <div className="flex items-center justify-between mb-4">
                           <div className="w-12 h-12 rounded-xl bg-[var(--color-brand-cyan)]/10 border border-[var(--color-brand-cyan)]/30 flex items-center justify-center text-[var(--color-brand-cyan)]">
-                            <MapPin size={24} />
+                            {survey.id === 'visita-papal-dashboard' ? <FileBarChart size={24} /> : <MapPin size={24} />}
                           </div>
                           <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
                             {survey.badge || survey.category}
@@ -429,7 +446,7 @@ const Admin = () => {
                           </a>
                         )}
 
-                        {userRole === 'administrador' && survey.id !== 'rio-cuarto-mapa' && (
+                        {userRole === 'administrador' && !['rio-cuarto-mapa', 'visita-papal-dashboard'].includes(survey.id) && (
                           <button
                             onClick={() => handleDeleteSurvey(survey.id)}
                             className="p-3 text-red-400 hover:bg-red-400/10 rounded-xl transition-colors"

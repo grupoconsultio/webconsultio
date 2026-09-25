@@ -28,3 +28,14 @@ dist-ssr
 
 # Local Netlify folder
 .netlify
+
+# Environment files and credentials
+.env
+.env.*
+!.env.example
+server/.env
+server/.env.*
+!server/.env.example
+server/node_modules
+
+
