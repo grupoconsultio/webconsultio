@@ -3,7 +3,9 @@
  * Conexión directa a API REST Backend y motor de cálculo reactivo en frontend
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL !== undefined 
+  ? import.meta.env.VITE_API_URL 
+  : (typeof window !== 'undefined' && window.location.port !== '5173' ? '' : 'http://localhost:3001');
 
 // Mapeo geográfico de Provincias Argentinas por Región
 export const REGIONES_ARGENTINA = {
