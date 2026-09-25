@@ -197,25 +197,24 @@ const EncuestaPapaDashboard = () => {
 
   // Sorteador en Vivo con animación y soporte para múltiples ganadores y suplentes
   const handleLiveDraw = async () => {
+    if (raffleTotal === 0 || raffleList.length === 0) {
+      alert('No hay participantes registrados en la base de datos para sortear.');
+      return;
+    }
+
     setIsDrawing(true);
     setWinnerModalOpen(true);
     setWinnerData(null);
     setCopiedHash(false);
 
-    const dummyNames = [
-      'usuario_381@gmail.com (DNI ***492)',
-      'mariana.c@hotmail.com (DNI ***105)',
-      'rodrigo_gonzalez@outlook.com (DNI ***720)',
-      'florencia_p@uba.ar (DNI ***618)',
-      'carlos_mendoza@yahoo.com.ar (DNI ***934)',
-      'beatriz_cordoba@gmail.com (DNI ***311)',
-      'ignacio_sur@gmail.com (DNI ***842)',
-      'valeria_rosario@gmail.com (DNI ***552)'
-    ];
-
     let count = 0;
     const interval = setInterval(() => {
-      setRouletteText(dummyNames[count % dummyNames.length]);
+      const p = raffleList[count % raffleList.length];
+      if (p) {
+        setRouletteText(`${p.email} (DNI ***${p.dni || '---'})`);
+      } else {
+        setRouletteText('Seleccionando participante certificado...');
+      }
       count++;
     }, 85);
 
@@ -251,8 +250,7 @@ const EncuestaPapaDashboard = () => {
   };
 
   const handleExportRaffle = () => {
-    const list = papaSurveyApi.getLocalRaffle();
-    papaSurveyApi.downloadClientCsv(`participantes_sorteo_${Date.now()}.csv`, list);
+    papaSurveyApi.exportRaffleCsv();
   };
 
   // Provincias disponibles según región
@@ -343,6 +341,25 @@ const EncuestaPapaDashboard = () => {
 
       {/* ─── CONTENIDO PRINCIPAL ─── */}
       <main className="max-w-7xl mx-auto px-4 lg:px-8 py-6 flex flex-col gap-6">
+
+        {/* Banner de Estado BBDD: Si la conexión a MySQL no está activa, alertar sin mostrar datos ficticios */}
+        {!dbStatus.isOnline && (
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-300">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="text-amber-400 shrink-0" size={22} />
+              <div className="text-xs">
+                <span className="font-bold block text-sm text-amber-200">Base de Datos MySQL No Conectada</span>
+                El servidor Express no puede alcanzar el puerto 3306 de MySQL (bloqueado por firewall o red). Los datos ficticios han sido eliminados por completo.
+              </div>
+            </div>
+            <button
+              onClick={() => setDbModalOpen(true)}
+              className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-xs font-semibold shrink-0 transition-all flex items-center gap-1.5 self-start sm:self-auto"
+            >
+              <Database size={14} /> Ver Diagnóstico BBDD
+            </button>
+          </div>
+        )}
 
         {/* ─── 1. FILA DE KPIS PRINCIPALES ─── */}
         <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
@@ -950,8 +967,13 @@ const EncuestaPapaDashboard = () => {
                 {/* Botón Disparador del Sorteo */}
                 <div className="flex flex-col justify-end">
                   <button
+                    disabled={raffleTotal === 0}
                     onClick={handleLiveDraw}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-xs md:text-sm flex items-center gap-2 shadow-xl shadow-amber-500/25 transition-all active:scale-95"
+                    className={`px-5 py-2.5 rounded-xl font-extrabold text-xs md:text-sm flex items-center gap-2 transition-all ${
+                      raffleTotal === 0
+                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5'
+                        : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black shadow-xl shadow-amber-500/25 active:scale-95'
+                    }`}
                   >
                     <Sparkles size={16} /> Sortear ({winnersCount} Titular{winnersCount > 1 ? 'es' : ''} + {substitutesCount} Suplente{substitutesCount !== 1 ? 's' : ''})
                   </button>
