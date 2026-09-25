@@ -1,39 +1,19 @@
 services:
-  # ─── SERVICIO BACKEND: API REST + MYSQL CONNECTOR ───
-  backend:
+  web:
     build:
-      context: ./server
+      context: .
       dockerfile: Dockerfile
-    container_name: consultio_backend_api
+    container_name: consultio_web
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "3000:3000"
+      - "80:80"
     environment:
       - NODE_ENV=production
-      - PORT=3001
+      - PORT=3000
       - DB_HOST=${DB_HOST:-2.25.114.103}
       - DB_PORT=${DB_PORT:-3306}
       - DB_USER=${DB_USER:-mysql}
       - DB_PASSWORD=${DB_PASSWORD:-msodtssapus5soxz}
       - DB_NAME=${DB_NAME:-mysql}
       - CORS_ORIGIN=*
-    networks:
-      - consultio_net
-
-  # ─── SERVICIO FRONTEND: VITE REACT + NGINX REVERSE PROXY ───
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: consultio_frontend_web
-    restart: unless-stopped
-    ports:
-      - "${PORT:-80}:80"
-    depends_on:
-      - backend
-    networks:
-      - consultio_net
-
-networks:
-  consultio_net:
-    driver: bridge

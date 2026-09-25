@@ -1,25 +1,38 @@
-# ─── STAGE 1: Compilación de la Aplicación Frontend con Node.js ───
+# ─── STAGE 1: Compilación de la Aplicación Frontend Vite ───
 FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Copiar manifiesto de dependencias para aprovechar caché de Docker
+# Copiar manifiesto de dependencias para aprovechar caché
 COPY package*.json ./
 RUN npm ci
 
-# Copiar el código fuente y compilar
+# Copiar todo el código y compilar Vite
 COPY . .
 RUN npm run build
 
-# ─── STAGE 2: Servidor Web Nginx Ultraliviano para Producción ───
-FROM nginx:alpine AS production
+# ─── STAGE 2: Imagen Final Autocontenida (Express + Frontend + API) ───
+FROM node:20-alpine
 
-# Copiar configuración personalizada de Nginx
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+WORKDIR /app
 
-# Copiar los archivos compilados del Stage 1
-COPY --from=build /app/dist /usr/share/nginx/html
+# Instalar dependencias del backend
+COPY server/package*.json ./server/
+RUN cd server && npm ci --omit=dev
 
+# Copiar código del servidor
+COPY server/ ./server/
+
+# Copiar los assets compilados de Vite
+COPY --from=build /app/dist ./dist
+
+# Variables de entorno
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Exponer ambos puertos (3000 por defecto en Coolify y 80 estándar web)
+EXPOSE 3000
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+# Iniciar la aplicación completa (Frontend SPA + API REST conectada a MySQL)
+CMD ["node", "server/index.js"]

@@ -1,12 +1,18 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import pool, { testConnection } from './db.js';
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || '3000', 10);
 
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 app.use(express.json());
@@ -381,6 +387,35 @@ app.get('/api/survey/export/raffle', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`[ConsulDat API] Servidor ejecutándose en el puerto ${PORT}`);
+// Servir archivos estáticos del frontend si existe la carpeta dist
+const possibleDistPaths = [
+  path.join(__dirname, 'dist'),
+  path.join(__dirname, '..', 'dist'),
+  path.join(process.cwd(), 'dist')
+];
+const distPath = possibleDistPaths.find(p => fs.existsSync(p));
+
+if (distPath) {
+  console.log(`[ConsulDat] Servidor frontend estático activo desde: ${distPath}`);
+  app.use(express.static(distPath));
+
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
+
+// Iniciar servidor en el puerto principal
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`[ConsulDat] Servidor ejecutándose en http://0.0.0.0:${PORT}`);
 });
+
+// Listener dual: si PORT no es 80, también intentar abrir 80 para compatibilidad total con Traefik/Coolify
+if (PORT !== 80) {
+  try {
+    const s80 = app.listen(80, '0.0.0.0', () => {
+      console.log('[ConsulDat] Servidor escuchando también en puerto 80');
+    });
+    s80.on('error', () => { /* puerto 80 ocupado o sin permiso root, ignorar */ });
+  } catch (e) {}
+}
