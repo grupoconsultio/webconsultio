@@ -73,12 +73,27 @@ const MapaArgentinaEncuesta = ({
         scrollWheelZoom: false
       });
 
-      // Capa base CartoDB
-      const tileUrl = darkMode
-        ? 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
-        : 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png';
+      // Capa base oficial de Argenmap - Instituto Geográfico Nacional (IGN)
+      const argenmapUrl = 'https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/capabaseargenmap@EPSG:3857@png/{z}/{x}/{-y}.png';
 
-      L.tileLayer(tileUrl, { maxZoom: 10 }).addTo(map);
+      const argenmapLayer = L.tileLayer(argenmapUrl, {
+        attribution: '&copy; <a href="https://www.ign.gob.ar" target="_blank" rel="noopener noreferrer">IGN Argentina - Argenmap</a>',
+        minZoom: 3,
+        maxZoom: 18
+      });
+
+      // En caso de contingencia temporal del servidor del IGN, fallback a OpenStreetMap sin API key
+      argenmapLayer.on('tileerror', () => {
+        if (!map._osmFallbackAdded) {
+          map._osmFallbackAdded = true;
+          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '&copy; OpenStreetMap'
+          }).addTo(map);
+        }
+      });
+
+      argenmapLayer.addTo(map);
 
       // Limitar límites de vista a Argentina y alrededores
       map.setMaxBounds([
@@ -206,7 +221,10 @@ const MapaArgentinaEncuesta = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+        <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
+          <span className="text-[11px] px-2.5 py-1 rounded-full bg-white/5 text-slate-300 font-medium border border-white/10 inline-flex items-center gap-1">
+            Argenmap · IGN
+          </span>
           <span className="text-xs px-3 py-1 rounded-full bg-[#0284c7]/20 text-[#00e5ff] font-semibold border border-[#0284c7]/30 flex items-center gap-1.5">
             <CheckCircle2 size={13} /> {activeProvinces.length} de 24 Provincias
           </span>
