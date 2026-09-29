@@ -60,6 +60,8 @@ import {
   TODAS_LAS_PROVINCIAS
 } from '../services/papaSurveyApi';
 
+import MapaArgentinaEncuesta from '../components/MapaArgentinaEncuesta';
+
 // Paleta institucional ConsulDat
 const COLORS = {
   blue: '#0284c7',
@@ -569,6 +571,16 @@ const EncuestaPapaDashboard = () => {
         {activeTab === 'analytics' && (
           <div className="flex flex-col gap-6">
             
+            {/* MAPA FEDERAL INTERACTIVO DE LA ARGENTINA */}
+            <MapaArgentinaEncuesta
+              provinciaStats={statsData?.demographics.byProvincia || []}
+              totalSamples={statsData?.kpis.totalSamples || 0}
+              selectedProvincia={filters.provincia}
+              onSelectProvincia={(prov) => setFilters(prev => ({ ...prev, provincia: prov }))}
+              darkMode={darkMode}
+              theme={theme}
+            />
+
             {/* FILA SUPERIOR: Distribución P3 + Medios de Información */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               

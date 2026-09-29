@@ -59,6 +59,21 @@
   @apply bg-white/10 rounded-full hover:bg-white/20;
 }
 
+/* Leaflet Custom Tooltips */
+.leaflet-custom-dark {
+  background-color: #0f172a !important;
+  border: 1px solid rgba(0, 229, 255, 0.3) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+  color: #ffffff !important;
+  padding: 4px 8px !important;
+}
+.leaflet-custom-dark::before {
+  border-top-color: #0f172a !important;
+  border-bottom-color: #0f172a !important;
+}
+
+
 /* Swiper overrides */
 .swiper-pagination-bullet {
   @apply bg-white/20 opacity-100;
