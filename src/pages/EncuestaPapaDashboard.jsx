@@ -189,9 +189,10 @@ const EncuestaPapaDashboard = () => {
   };
 
   const formatSeconds = (sec) => {
-    if (!sec) return '0s';
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
+    if (!sec || isNaN(sec)) return '0s';
+    const total = Math.round(Number(sec));
+    const m = Math.floor(total / 60);
+    const s = total % 60;
     return m > 0 ? `${m}m ${s}s` : `${s}s`;
   };
 
