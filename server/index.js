@@ -144,39 +144,143 @@ app.get('/api/survey/stats', async (req, res) => {
     const matrixPromises = axes.map(async (axis) => {
       const sql = `
         SELECT 
-          ${axis.key} as response,
+          LOWER(TRIM(${axis.key})) as response,
           COUNT(*) as count
         FROM survey_responses
         ${whereSql ? `${whereSql} AND ${axis.key} IS NOT NULL` : `WHERE ${axis.key} IS NOT NULL`}
-        GROUP BY ${axis.key}
+        GROUP BY response
       `;
       const [rows] = await pool.query(sql, params);
       const total = rows.reduce((acc, curr) => acc + Number(curr.count), 0) || 1;
       
-      const getPercent = (term) => {
-        const found = rows.find(r => (r.response || '').toLowerCase().includes(term.toLowerCase()));
+      const getPct = (valKey) => {
+        const found = rows.find(r => r.response === valKey);
         return found ? Math.round((Number(found.count) / total) * 100) : 0;
       };
+
+      const mucho = getPct('mucho');
+      const bastante = getPct('bastante');
+      const moderado = getPct('moderado');
+      const poco = getPct('poco');
+      const ninguno = getPct('ninguno');
+      const ns_nc = getPct('ns_nc');
 
       return {
         eje: axis.label,
         key: axis.key,
-        positivo: getPercent('positivo'),
-        neutro: getPercent('neutro'),
-        negativo: getPercent('negativo'),
-        ns_nc: getPercent('no sabe') + getPercent('ns/nc')
+        mucho,
+        bastante,
+        moderado,
+        poco,
+        ninguno,
+        ns_nc,
+        altoImpacto: mucho + bastante,
+        medioImpacto: moderado,
+        bajoImpacto: poco + ninguno
       };
     });
 
     const impactMatrix = await Promise.all(matrixPromises);
 
-    // d. Cruces Demográficos: Promedio P3 por Edad, Educación, Región/Provincia
+    // Helper para distribuciones categóricas porcentuales
+    const getCategoricalDistribution = async (col, labelMap) => {
+      const sql = `
+        SELECT ${col} as val, COUNT(*) as count
+        FROM survey_responses
+        ${whereSql ? `${whereSql} AND ${col} IS NOT NULL` : `WHERE ${col} IS NOT NULL`}
+        GROUP BY ${col}
+        ORDER BY count DESC
+      `;
+      const [rows] = await pool.query(sql, params);
+      const total = rows.reduce((acc, curr) => acc + Number(curr.count), 0) || 1;
+      return rows.map(r => ({
+        key: r.val,
+        label: labelMap[r.val] || r.val,
+        count: Number(r.count),
+        pct: Math.round((Number(r.count) / total) * 100)
+      }));
+    };
+
+    // P1: Seguimiento
+    const p1Seguimiento = await getCategoricalDistribution('p1_seguimiento', {
+      mucho: 'Mucho',
+      bastante: 'Bastante',
+      poco: 'Poco',
+      nada: 'Nada',
+      ns_nc: 'Ns/Nc'
+    });
+
+    // P5: Imagen de la Iglesia Católica
+    const p5Iglesia = await getCategoricalDistribution('p5_iglesia', {
+      muy_positivo: 'Muy Positivo',
+      positivo: 'Positivo',
+      neutro: 'Neutro',
+      negativo: 'Negativo',
+      muy_negativo: 'Muy Negativo',
+      ns_nc: 'Ns/Nc'
+    });
+
+    // P6: Relación con el Gobierno Nacional
+    const p6Gobierno = await getCategoricalDistribution('p6_gobierno', {
+      mejorara: 'Mejorará la relación',
+      sin_efecto: 'Sin efecto',
+      empeorara: 'Empeorará la relación',
+      ns_nc: 'Ns/Nc'
+    });
+
+    // P8: Identificación Religiosa
+    const p8Religion = await getCategoricalDistribution('p8_religion', {
+      catolico_practicante: 'Católico Practicante',
+      catolico_no_practicante: 'Católico No Practicante',
+      evangelico_protestante: 'Evangélico / Protestante',
+      agnostico: 'Agnóstico',
+      ateo: 'Ateo',
+      sin_religion_definida: 'Creyente s/ Religión Definida',
+      otra: 'Otra'
+    });
+
+    // P9: Liderazgo Moral del Papa Francisco
+    const p9PapaLider = await getCategoricalDistribution('p9_papa_lider', {
+      muy_buena: 'Muy Buena',
+      buena: 'Buena',
+      regular_neutra: 'Regular / Neutra',
+      mala: 'Mala',
+      muy_mala: 'Muy Mala',
+      ns_nc: 'Ns/Nc'
+    });
+
+    // P10: Transmisión de Valores para Argentina
+    const p10Valores = await getCategoricalDistribution('p10_valores', {
+      si: 'Sí',
+      en_parte: 'En parte',
+      no: 'No',
+      ns_nc: 'Ns/Nc'
+    });
+
+    // P11: Reflexión o Cambio de Actitud
+    const p11Reflexion = await getCategoricalDistribution('p11_reflexion', {
+      si_mucho: 'Sí, mucho',
+      algo: 'Algo',
+      nada: 'Nada',
+      ns_nc: 'Ns/Nc'
+    });
+
+    // P7: Testimonios / Memoria Histórica
+    const [p7Rows] = await pool.query(`
+      SELECT p7_memoria as texto, p15_provincia as provincia, p13_edad as edad, created_at
+      FROM survey_responses
+      ${whereSql ? `${whereSql} AND p7_memoria IS NOT NULL AND CHAR_LENGTH(TRIM(p7_memoria)) > 3` : 'WHERE p7_memoria IS NOT NULL AND CHAR_LENGTH(TRIM(p7_memoria)) > 3'}
+      ORDER BY id DESC
+      LIMIT 25
+    `, params);
+
+    // d. Cruces Demográficos: Promedio P3 por Edad, Educación, Región/Provincia, Género y Política
     const [byEdad] = await pool.query(`
       SELECT p13_edad as grupo, ROUND(AVG(p3_valoracion), 2) as promedio, COUNT(*) as count
       FROM survey_responses
       ${whereSql ? `${whereSql} AND p13_edad IS NOT NULL` : 'WHERE p13_edad IS NOT NULL'}
       GROUP BY p13_edad
-      ORDER BY FIELD(p13_edad, '16-24', '25-34', '35-49', '50-64', '65+')
+      ORDER BY FIELD(p13_edad, '16-24', '25-34', '35-49', '50-64', '65_mas')
     `, params);
 
     const [byEducacion] = await pool.query(`
@@ -194,6 +298,22 @@ app.get('/api/survey/stats', async (req, res) => {
       GROUP BY p15_provincia
       ORDER BY count DESC
       LIMIT 12
+    `, params);
+
+    const [byGenero] = await pool.query(`
+      SELECT p14_genero as grupo, ROUND(AVG(p3_valoracion), 2) as promedio, COUNT(*) as count
+      FROM survey_responses
+      ${whereSql ? `${whereSql} AND p14_genero IS NOT NULL` : 'WHERE p14_genero IS NOT NULL'}
+      GROUP BY p14_genero
+      ORDER BY count DESC
+    `, params);
+
+    const [byPolitica] = await pool.query(`
+      SELECT p17_politica as grupo, ROUND(AVG(p3_valoracion), 2) as promedio, COUNT(*) as count
+      FROM survey_responses
+      ${whereSql ? `${whereSql} AND p17_politica IS NOT NULL` : 'WHERE p17_politica IS NOT NULL'}
+      GROUP BY p17_politica
+      ORDER BY count DESC
     `, params);
 
     // e. Top 20 Palabras P12 (Palabra Síntesis)
@@ -232,8 +352,18 @@ app.get('/api/survey/stats', async (req, res) => {
       demographics: {
         byEdad,
         byEducacion,
-        byProvincia
+        byProvincia,
+        byGenero,
+        byPolitica
       },
+      p1Seguimiento,
+      p5Iglesia,
+      p6Gobierno,
+      p7Memoria: p7Rows,
+      p8Religion,
+      p9PapaLider,
+      p10Valores,
+      p11Reflexion,
       topWords: wordRows,
       mediaConsumption: mediaRows
     });

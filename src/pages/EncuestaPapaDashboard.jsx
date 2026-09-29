@@ -31,7 +31,13 @@ import {
   UserPlus,
   X,
   Sliders,
-  Server
+  Server,
+  Quote,
+  Heart,
+  Compass,
+  BookOpen,
+  Building2,
+  Activity
 } from 'lucide-react';
 
 import {
@@ -66,9 +72,11 @@ const COLORS = {
 };
 
 const IMPACT_COLORS = {
-  positivo: '#10b981',
-  neutro: '#94a3b8',
-  negativo: '#f43f5e',
+  mucho: '#0284c7',
+  bastante: '#06b6d4',
+  moderado: '#f59e0b',
+  poco: '#94a3b8',
+  ninguno: '#f43f5e',
   ns_nc: '#8b5cf6'
 };
 
@@ -102,7 +110,17 @@ const EncuestaPapaDashboard = () => {
   const [statsData, setStatsData] = useState(null);
 
   // Cruce Demográfico Activo (dentro del tablero unificado)
-  const [cruceType, setCruceType] = useState('edad'); // 'edad' | 'educacion' | 'provincia'
+  const [cruceType, setCruceType] = useState('edad'); // 'edad' | 'educacion' | 'provincia' | 'genero' | 'politica'
+
+  const cruceData = useMemo(() => {
+    if (!statsData?.demographics) return [];
+    if (cruceType === 'edad') return statsData.demographics.byEdad || [];
+    if (cruceType === 'educacion') return statsData.demographics.byEducacion || [];
+    if (cruceType === 'provincia') return statsData.demographics.byProvincia || [];
+    if (cruceType === 'genero') return statsData.demographics.byGenero || [];
+    if (cruceType === 'politica') return statsData.demographics.byPolitica || [];
+    return [];
+  }, [statsData, cruceType]);
 
   // Configuración de Sorteo
   const [winnersCount, setWinnersCount] = useState(1);
@@ -673,7 +691,7 @@ const EncuestaPapaDashboard = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div>
                   <h3 className="font-display font-bold text-base flex items-center gap-2">
-                    <Layers size={18} className="text-emerald-400" /> Matriz de Impactos Percibidos (P4: 100% Apiladas)
+                    <Layers size={18} className="text-cyan-400" /> Matriz de Impactos Percibidos (P4: 100% Apiladas)
                   </h3>
                   <p className={`text-xs ${theme.subText} mt-0.5`}>
                     Evaluación multidimensional en 4 ejes estratégicos: Político, Social, Económico y Religioso.
@@ -682,10 +700,12 @@ const EncuestaPapaDashboard = () => {
 
                 {/* Leyenda de Impactos */}
                 <div className="flex items-center gap-3 text-xs flex-wrap">
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[#10b981]" /> Positivo</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[#94a3b8]" /> Neutro</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[#f43f5e]" /> Negativo</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[#8b5cf6]" /> No sabe</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[#0284c7]" /> Mucho</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[#06b6d4]" /> Bastante</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[#f59e0b]" /> Moderado</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[#94a3b8]" /> Poco</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[#f43f5e]" /> Ninguno</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[#8b5cf6]" /> Ns/Nc</span>
                 </div>
               </div>
 
@@ -707,12 +727,14 @@ const EncuestaPapaDashboard = () => {
                         color: darkMode ? '#ffffff' : '#0f172a',
                         fontSize: '12px'
                       }}
-                      formatter={(val, name) => [`${val}%`, name.toUpperCase()]}
+                      formatter={(val, name) => [`${val}%`, name]}
                     />
-                    <Bar dataKey="positivo" stackId="a" fill={IMPACT_COLORS.positivo} radius={[0, 0, 0, 0]} name="Positivo" />
-                    <Bar dataKey="neutro" stackId="a" fill={IMPACT_COLORS.neutro} name="Neutro" />
-                    <Bar dataKey="negativo" stackId="a" fill={IMPACT_COLORS.negativo} name="Negativo" />
-                    <Bar dataKey="ns_nc" stackId="a" fill={IMPACT_COLORS.ns_nc} radius={[0, 6, 6, 0]} name="No sabe" />
+                    <Bar dataKey="mucho" stackId="a" fill={IMPACT_COLORS.mucho} name="Mucho" />
+                    <Bar dataKey="bastante" stackId="a" fill={IMPACT_COLORS.bastante} name="Bastante" />
+                    <Bar dataKey="moderado" stackId="a" fill={IMPACT_COLORS.moderado} name="Moderado" />
+                    <Bar dataKey="poco" stackId="a" fill={IMPACT_COLORS.poco} name="Poco" />
+                    <Bar dataKey="ninguno" stackId="a" fill={IMPACT_COLORS.ninguno} name="Ninguno" />
+                    <Bar dataKey="ns_nc" stackId="a" fill={IMPACT_COLORS.ns_nc} radius={[0, 6, 6, 0]} name="Ns / Nc" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -721,13 +743,229 @@ const EncuestaPapaDashboard = () => {
                 {(statsData?.impactMatrix || []).map((item, idx) => (
                   <div key={idx} className={`p-3 rounded-xl ${theme.cardSubtle}`}>
                     <span className="text-xs text-slate-400 font-medium">Eje {item.eje}</span>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-sm font-bold text-emerald-400">{item.positivo}% Pos.</span>
-                      <span className="text-sm font-bold text-rose-400">{item.negativo}% Neg.</span>
+                    <div className="flex items-center justify-between mt-1 text-xs">
+                      <span className="font-bold text-cyan-400">{item.altoImpacto}% Alto</span>
+                      <span className="text-amber-400">{item.moderado}% Med.</span>
+                      <span className="font-bold text-rose-400">{item.bajoImpacto}% Bajo</span>
                     </div>
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* SECCIÓN: Evaluación Institucional y Liderazgo Político / Moral (P5, P6, P9) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              
+              {/* P5: Imagen Iglesia Católica */}
+              <div className={`p-5 rounded-2xl border ${theme.card} flex flex-col justify-between`}>
+                <div>
+                  <h3 className="font-display font-bold text-sm flex items-center gap-2 mb-1">
+                    <Building2 size={17} className="text-emerald-400" /> Imagen Iglesia Católica (P5)
+                  </h3>
+                  <p className={`text-xs ${theme.subText} mb-4`}>
+                    Efecto esperado de la visita en la percepción de la Iglesia en Argentina.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2.5 my-2">
+                  {(statsData?.p5Iglesia || []).map((item) => (
+                    <div key={item.key} className="flex flex-col gap-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="font-medium text-slate-300">{item.label}</span>
+                        <span className="font-bold text-white">{item.pct}% <span className="text-[10px] text-slate-400 font-normal">({item.count})</span></span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            item.key.includes('positivo') ? 'bg-emerald-400' :
+                            item.key.includes('negativo') ? 'bg-rose-500' :
+                            item.key.includes('neutro') ? 'bg-slate-400' : 'bg-purple-400'
+                          }`}
+                          style={{ width: `${item.pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {(!statsData?.p5Iglesia || statsData.p5Iglesia.length === 0) && (
+                    <span className="text-xs text-slate-500">Sin datos registrados</span>
+                  )}
+                </div>
+              </div>
+
+              {/* P6: Relación Gobierno Nacional */}
+              <div className={`p-5 rounded-2xl border ${theme.card} flex flex-col justify-between`}>
+                <div>
+                  <h3 className="font-display font-bold text-sm flex items-center gap-2 mb-1">
+                    <Activity size={17} className="text-[#0284c7]" /> Relación con Gobierno (P6)
+                  </h3>
+                  <p className={`text-xs ${theme.subText} mb-4`}>
+                    Impacto en el vínculo institucional y político con la gestión nacional.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2.5 my-2">
+                  {(statsData?.p6Gobierno || []).map((item) => (
+                    <div key={item.key} className="flex flex-col gap-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="font-medium text-slate-300">{item.label}</span>
+                        <span className="font-bold text-white">{item.pct}% <span className="text-[10px] text-slate-400 font-normal">({item.count})</span></span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            item.key === 'mejorara' ? 'bg-emerald-400' :
+                            item.key === 'empeorara' ? 'bg-rose-500' : 'bg-[#0284c7]'
+                          }`}
+                          style={{ width: `${item.pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {(!statsData?.p6Gobierno || statsData.p6Gobierno.length === 0) && (
+                    <span className="text-xs text-slate-500">Sin datos registrados</span>
+                  )}
+                </div>
+              </div>
+
+              {/* P9: Liderazgo Moral Papa Francisco */}
+              <div className={`p-5 rounded-2xl border ${theme.card} flex flex-col justify-between`}>
+                <div>
+                  <h3 className="font-display font-bold text-sm flex items-center gap-2 mb-1">
+                    <Award size={17} className="text-amber-400" /> Liderazgo Moral Papa (P9)
+                  </h3>
+                  <p className={`text-xs ${theme.subText} mb-4`}>
+                    Calificación de Francisco como referente espiritual y ético global.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2.5 my-2">
+                  {(statsData?.p9PapaLider || []).map((item) => (
+                    <div key={item.key} className="flex flex-col gap-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="font-medium text-slate-300">{item.label}</span>
+                        <span className="font-bold text-white">{item.pct}% <span className="text-[10px] text-slate-400 font-normal">({item.count})</span></span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            item.key.includes('buena') ? 'bg-amber-400' :
+                            item.key.includes('mala') ? 'bg-rose-500' : 'bg-slate-400'
+                          }`}
+                          style={{ width: `${item.pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {(!statsData?.p9PapaLider || statsData.p9PapaLider.length === 0) && (
+                    <span className="text-xs text-slate-500">Sin datos registrados</span>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* SECCIÓN: Valores, Reflexión, Interés y Religión (P1, P10, P11, P8) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              
+              {/* P1: Seguimiento de la Visita */}
+              <div className={`p-5 rounded-2xl border ${theme.card}`}>
+                <h3 className="font-display font-bold text-sm flex items-center gap-2 mb-1">
+                  <Compass size={17} className="text-cyan-400" /> Interés & Seguimiento (P1)
+                </h3>
+                <p className={`text-xs ${theme.subText} mb-3`}>
+                  Nivel de atención y seguimiento informativo.
+                </p>
+                <div className="flex flex-col gap-2">
+                  {(statsData?.p1Seguimiento || []).map((item) => (
+                    <div key={item.key} className="flex flex-col gap-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-300">{item.label}</span>
+                        <span className="font-bold text-white">{item.pct}%</span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden">
+                        <div className="h-full bg-cyan-400 rounded-full" style={{ width: `${item.pct}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* P10: Transmisión de Valores */}
+              <div className={`p-5 rounded-2xl border ${theme.card}`}>
+                <h3 className="font-display font-bold text-sm flex items-center gap-2 mb-1">
+                  <Heart size={17} className="text-rose-400" /> Transmite Valores (P10)
+                </h3>
+                <p className={`text-xs ${theme.subText} mb-3`}>
+                  ¿Aporta valores necesarios para el país?
+                </p>
+                <div className="flex flex-col gap-2">
+                  {(statsData?.p10Valores || []).map((item) => (
+                    <div key={item.key} className="flex flex-col gap-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-300">{item.label}</span>
+                        <span className="font-bold text-white">{item.pct}%</span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${
+                            item.key === 'si' ? 'bg-emerald-400' : item.key === 'no' ? 'bg-rose-500' : 'bg-amber-400'
+                          }`}
+                          style={{ width: `${item.pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* P11: Llamado a la Reflexión */}
+              <div className={`p-5 rounded-2xl border ${theme.card}`}>
+                <h3 className="font-display font-bold text-sm flex items-center gap-2 mb-1">
+                  <Sparkles size={17} className="text-purple-400" /> Invita a Reflexión (P11)
+                </h3>
+                <p className={`text-xs ${theme.subText} mb-3`}>
+                  Llamado a cambio personal y social.
+                </p>
+                <div className="flex flex-col gap-2">
+                  {(statsData?.p11Reflexion || []).map((item) => (
+                    <div key={item.key} className="flex flex-col gap-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-300">{item.label}</span>
+                        <span className="font-bold text-white">{item.pct}%</span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${
+                            item.key === 'si_mucho' ? 'bg-purple-400' : item.key === 'nada' ? 'bg-slate-500' : 'bg-cyan-400'
+                          }`}
+                          style={{ width: `${item.pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* P8: Identificación Religiosa */}
+              <div className={`p-5 rounded-2xl border ${theme.card}`}>
+                <h3 className="font-display font-bold text-sm flex items-center gap-2 mb-1">
+                  <Users size={17} className="text-emerald-400" /> Perfil Religioso (P8)
+                </h3>
+                <p className={`text-xs ${theme.subText} mb-3`}>
+                  Adscripción confesional de la muestra.
+                </p>
+                <div className="flex flex-col gap-2">
+                  {(statsData?.p8Religion || []).slice(0, 4).map((item) => (
+                    <div key={item.key} className="flex flex-col gap-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-300 truncate">{item.label}</span>
+                        <span className="font-bold text-white">{item.pct}%</span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden">
+                        <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${item.pct}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </div>
 
             {/* SECCIÓN UNIFICADA: Cruce Demográfico de Valoración (P3) */}
@@ -743,7 +981,7 @@ const EncuestaPapaDashboard = () => {
                 </div>
 
                 {/* Selector de tipo de cruce */}
-                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white/5 border border-white/10 self-start sm:self-auto">
+                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white/5 border border-white/10 self-start sm:self-auto flex-wrap">
                   <button
                     onClick={() => setCruceType('edad')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -766,7 +1004,23 @@ const EncuestaPapaDashboard = () => {
                       cruceType === 'provincia' ? 'bg-[#0284c7] text-white shadow' : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    Por Región
+                    Por Región / Prov.
+                  </button>
+                  <button
+                    onClick={() => setCruceType('genero')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      cruceType === 'genero' ? 'bg-[#0284c7] text-white shadow' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Por Género
+                  </button>
+                  <button
+                    onClick={() => setCruceType('politica')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      cruceType === 'politica' ? 'bg-[#0284c7] text-white shadow' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Por Orientación Política
                   </button>
                 </div>
               </div>
@@ -774,13 +1028,7 @@ const EncuestaPapaDashboard = () => {
               <div className="h-[290px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={
-                      cruceType === 'edad'
-                        ? statsData?.demographics.byEdad || []
-                        : (cruceType === 'educacion'
-                            ? statsData?.demographics.byEducacion || []
-                            : statsData?.demographics.byProvincia || [])
-                    }
+                    data={cruceData}
                     margin={{ top: 10, right: 20, left: -10, bottom: 40 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} vertical={false} />
@@ -813,13 +1061,7 @@ const EncuestaPapaDashboard = () => {
                       label={{ value: `Media Nac. ${statsData?.kpis.avgValoracion}`, fill: '#f59e0b', fontSize: 11 }}
                     />
                     <Bar dataKey="promedio" fill="#0284c7" radius={[6, 6, 0, 0]} name="promedio">
-                      {(
-                        cruceType === 'edad'
-                          ? statsData?.demographics.byEdad || []
-                          : (cruceType === 'educacion'
-                              ? statsData?.demographics.byEducacion || []
-                              : statsData?.demographics.byProvincia || [])
-                      ).map((entry, index) => (
+                      {cruceData.map((entry, index) => (
                         <Cell
                           key={`cruce-${index}`}
                           fill={entry.promedio >= (statsData?.kpis.avgValoracion || 7) ? COLORS.emerald : COLORS.blue}
@@ -876,6 +1118,45 @@ const EncuestaPapaDashboard = () => {
                     <span className="font-bold text-[#0284c7]">{w.count}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* SECCIÓN: Memoria Histórica & Testimonios Ciudadanos (P7) */}
+            <div className={`p-5 rounded-2xl border ${theme.card}`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                <div>
+                  <h3 className="font-display font-bold text-base flex items-center gap-2">
+                    <BookOpen size={18} className="text-[#00e5ff]" /> Memoria Histórica & Testimonios (P7)
+                  </h3>
+                  <p className={`text-xs ${theme.subText} mt-0.5`}>
+                    Recuerdos cualitativos de visitas papales previas a la Argentina (Juan Pablo II 1982 / 1987).
+                  </p>
+                </div>
+                <span className="text-xs px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300 self-start sm:self-auto">
+                  {statsData?.p7Memoria?.length || 0} testimonios registrados
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[440px] overflow-y-auto pr-1">
+                {(statsData?.p7Memoria || []).map((t, idx) => (
+                  <div key={idx} className={`p-4 rounded-xl border ${theme.cardSubtle} flex flex-col justify-between gap-3 hover:border-cyan-500/30 transition-all`}>
+                    <div className="flex items-start gap-2.5">
+                      <Quote size={18} className="text-cyan-400 flex-shrink-0 mt-0.5 opacity-70" />
+                      <p className="text-xs text-slate-200 leading-relaxed italic whitespace-pre-line">
+                        "{t.texto}"
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between pt-2.5 border-t border-white/5 text-[11px] text-slate-400">
+                      <span className="font-semibold text-slate-300">{t.provincia || 'N/A'}</span>
+                      <span className="px-2 py-0.5 rounded bg-white/5 text-[10px] font-mono">{t.edad ? t.edad.replace('_', ' ') : 'N/A'}</span>
+                    </div>
+                  </div>
+                ))}
+                {(!statsData?.p7Memoria || statsData.p7Memoria.length === 0) && (
+                  <div className="col-span-full py-8 text-center text-xs text-slate-500">
+                    No se han registrado testimonios de memoria histórica en la muestra seleccionada.
+                  </div>
+                )}
               </div>
             </div>
 

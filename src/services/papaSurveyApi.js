@@ -34,16 +34,26 @@ export const EMPTY_STATS = {
   },
   distributionP3: Array.from({ length: 10 }, (_, i) => ({ score: i + 1, count: 0 })),
   impactMatrix: [
-    { eje: 'Político', key: 'p4_politico', positivo: 0, neutro: 0, negativo: 0, ns_nc: 0 },
-    { eje: 'Social', key: 'p4_social', positivo: 0, neutro: 0, negativo: 0, ns_nc: 0 },
-    { eje: 'Económico', key: 'p4_economico', positivo: 0, neutro: 0, negativo: 0, ns_nc: 0 },
-    { eje: 'Religioso', key: 'p4_religioso', positivo: 0, neutro: 0, negativo: 0, ns_nc: 0 }
+    { eje: 'Político', key: 'p4_politico', mucho: 0, bastante: 0, moderado: 0, poco: 0, ninguno: 0, ns_nc: 0, altoImpacto: 0, medioImpacto: 0, bajoImpacto: 0 },
+    { eje: 'Social', key: 'p4_social', mucho: 0, bastante: 0, moderado: 0, poco: 0, ninguno: 0, ns_nc: 0, altoImpacto: 0, medioImpacto: 0, bajoImpacto: 0 },
+    { eje: 'Económico', key: 'p4_economico', mucho: 0, bastante: 0, moderado: 0, poco: 0, ninguno: 0, ns_nc: 0, altoImpacto: 0, medioImpacto: 0, bajoImpacto: 0 },
+    { eje: 'Religioso', key: 'p4_religioso', mucho: 0, bastante: 0, moderado: 0, poco: 0, ninguno: 0, ns_nc: 0, altoImpacto: 0, medioImpacto: 0, bajoImpacto: 0 }
   ],
   demographics: {
     byEdad: [],
     byEducacion: [],
-    byProvincia: []
+    byProvincia: [],
+    byGenero: [],
+    byPolitica: []
   },
+  p1Seguimiento: [],
+  p5Iglesia: [],
+  p6Gobierno: [],
+  p7Memoria: [],
+  p8Religion: [],
+  p9PapaLider: [],
+  p10Valores: [],
+  p11Reflexion: [],
   topWords: [],
   mediaConsumption: [],
   filteredResponses: []
