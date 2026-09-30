@@ -595,14 +595,20 @@ app.get('/api/github/proxy/:owner/:repo/:branch/*', async (req, res) => {
         html, body {
           height: 100% !important;
           margin: 0 !important;
-          overflow: hidden !important;
+          overflow-y: auto !important;
+          overflow-x: hidden !important;
         }
         body {
           display: flex !important;
           flex-direction: column !important;
+          scrollbar-width: thin;
         }
         header {
           flex-shrink: 0 !important;
+          padding: 12px 24px 8px !important;
+        }
+        header h1 {
+          font-size: 21px !important;
         }
         .shell {
           flex: 1 1 auto !important;
@@ -621,10 +627,11 @@ app.get('/api/github/proxy/:owner/:repo/:branch/*', async (req, res) => {
         }
         .qbar {
           flex-shrink: 0 !important;
+          padding: 6px 18px !important;
         }
         .mapwrap {
           flex: 1 1 auto !important;
-          min-height: 0 !important;
+          min-height: 365px !important;
           position: relative !important;
         }
         .rail {
@@ -632,14 +639,11 @@ app.get('/api/github/proxy/:owner/:repo/:branch/*', async (req, res) => {
         }
         footer {
           flex-shrink: 0 !important;
+          padding: 6px 18px !important;
         }
-        @media (max-height: 480px) {
-          html, body {
-            height: auto !important;
-            overflow-y: auto !important;
-          }
+        @media (max-height: 500px) {
           .mapwrap {
-            min-height: 220px !important;
+            min-height: 280px !important;
           }
         }
       </style>`;

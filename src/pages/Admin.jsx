@@ -1531,17 +1531,17 @@ const Admin = () => {
          ══════════════════════════════════════════════════════════════ */}
       <AnimatePresence>
         {activePreviewWork && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-md p-2 sm:p-4">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-md p-1 sm:p-2.5">
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
               className={`bg-[#0B0F17] border border-white/20 rounded-2xl flex flex-col shadow-2xl overflow-hidden transition-all duration-300 ${
-                isFullscreenPreview ? 'w-full h-full rounded-none' : 'w-full max-w-7xl h-[95vh]'
+                isFullscreenPreview ? 'w-full h-full rounded-none' : 'w-full max-w-7xl h-[97vh]'
               }`}
             >
               {/* Barra Superior del Visor */}
-              <div className="px-5 py-3.5 border-b border-white/10 bg-[#111827] flex items-center justify-between gap-4 flex-shrink-0">
+              <div className="px-5 py-2.5 border-b border-white/10 bg-[#111827] flex items-center justify-between gap-4 flex-shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
                   {renderWorkIcon(activePreviewWork)}
                   <div className="min-w-0">
