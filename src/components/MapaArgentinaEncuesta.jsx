@@ -5,15 +5,50 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import argentinaGeo from '../data/argentinaProvincias.json';
 
+// Función para normalizar nombres canónicos de provincias
+export function normalizeProvince(name) {
+  if (!name) return '';
+  const s = String(name).toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .trim();
+
+  // CABA / Capital Federal
+  if (s.includes('caba') || s.includes('capital federal') || s.includes('ciudad autonoma')) {
+    return 'caba';
+  }
+
+  // Provincia de Buenos Aires (GBA, Conurbano, etc.)
+  if (s.includes('buenos aires') || s.includes('conurbano') || s.includes('la plata') || s.includes('gba')) {
+    return 'buenos aires';
+  }
+
+  // Tierra del Fuego
+  if (s.includes('tierra del fuego')) {
+    return 'tierra del fuego';
+  }
+
+  return s;
+}
+
 // Función para emparejar nombres de provincias de forma tolerante a tildes, mayúsculas y sufijos
 export function matchProvinceName(p1, p2) {
   if (!p1 || !p2) return false;
-  const norm = s => s.toLowerCase()
+  const c1 = normalizeProvince(p1);
+  const c2 = normalizeProvince(p2);
+  if (c1 === c2) return true;
+
+  const norm = s => String(s).toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/\(.*?\)/g, '')
     .trim();
   const n1 = norm(p1);
   const n2 = norm(p2);
+
+  // Evitar colisión entre CABA y Provincia de Buenos Aires
+  const isCaba1 = n1.includes('caba') || n1.includes('ciudad autonoma') || n1.includes('capital federal');
+  const isCaba2 = n2.includes('caba') || n2.includes('ciudad autonoma') || n2.includes('capital federal');
+  if (isCaba1 !== isCaba2) return false;
+
   return n1.includes(n2) || n2.includes(n1);
 }
 
@@ -41,10 +76,26 @@ const MapaArgentinaEncuesta = ({
 
   // Obtener datos de una provincia del GeoJSON
   const getProvinceData = (geoNombre) => {
+    let totalCount = 0;
+    let weightedPromedioSum = 0;
+    let found = false;
+    let matchedGrupo = geoNombre;
+
     for (const [nombre, data] of statsMap.entries()) {
       if (matchProvinceName(nombre, geoNombre)) {
-        return data;
+        found = true;
+        matchedGrupo = data.grupo || nombre;
+        const count = Number(data.count) || 0;
+        totalCount += count;
+        if (data.promedio && count > 0) {
+          weightedPromedioSum += Number(data.promedio) * count;
+        }
       }
+    }
+
+    if (found && totalCount > 0) {
+      const avg = weightedPromedioSum > 0 ? (weightedPromedioSum / totalCount).toFixed(2) : null;
+      return { grupo: matchedGrupo, count: totalCount, promedio: avg };
     }
     return { grupo: geoNombre, count: 0, promedio: null };
   };
@@ -176,11 +227,12 @@ const MapaArgentinaEncuesta = ({
           },
           click: () => {
             if (onSelectProvincia) {
+              const targetGroup = (data && data.count > 0 && data.grupo) ? data.grupo : geoNombre;
               // Si ya estaba seleccionada, deseleccionar
               if (selectedProvincia !== 'Todas' && matchProvinceName(selectedProvincia, geoNombre)) {
                 onSelectProvincia('Todas');
               } else {
-                onSelectProvincia(geoNombre);
+                onSelectProvincia(targetGroup);
               }
             }
           }

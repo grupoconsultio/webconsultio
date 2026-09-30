@@ -19,13 +19,13 @@ app.use(express.json());
 
 // Mapeo de Provincias Argentinas por Región
 const REGIONES = {
-  CABA: ['Ciudad Autónoma de Buenos Aires', 'CABA'],
-  GBA: ['Gran Buenos Aires', 'Buenos Aires - GBA', 'Buenos Aires'],
-  Centro: ['Córdoba', 'Santa Fe', 'Entre Ríos'],
+  CABA: ['Ciudad Autónoma de Buenos Aires (CABA)', 'Ciudad Autónoma de Buenos Aires', 'CABA', 'Capital Federal'],
+  GBA: ['Buenos Aires', 'Gran Buenos Aires', 'Buenos Aires - GBA', 'La Plata / Conurbano'],
+  Centro: ['Córdoba', 'Santa Fe', 'Entre Ríos', 'Interior Buenos Aires'],
   Cuyo: ['Mendoza', 'San Juan', 'San Luis'],
   NOA: ['Tucumán', 'Salta', 'Jujuy', 'Santiago del Estero', 'Catamarca', 'La Rioja'],
   NEA: ['Chaco', 'Corrientes', 'Misiones', 'Formosa'],
-  Patagonia: ['Río Negro', 'Neuquén', 'Chubut', 'Santa Cruz', 'Tierra del Fuego', 'La Pampa']
+  Patagonia: ['Río Negro', 'Neuquén', 'Chubut', 'Santa Cruz', 'Tierra del Fuego', 'Tierra del Fuego, Antártida e Islas del Atlántico Sur', 'La Pampa']
 };
 
 // Helper para construir cláusulas WHERE dinámicas
@@ -46,8 +46,15 @@ function buildWhereClause(query) {
   }
 
   if (provincia && provincia !== 'Todas') {
-    conditions.push('p15_provincia = ?');
-    params.push(provincia);
+    const pNorm = String(provincia).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (pNorm.includes('caba') || pNorm.includes('ciudad autonoma') || pNorm.includes('capital federal')) {
+      conditions.push('(p15_provincia LIKE "%CABA%" OR p15_provincia LIKE "%Ciudad Autónoma%" OR p15_provincia LIKE "%Capital Federal%")');
+    } else if (pNorm.includes('tierra del fuego')) {
+      conditions.push('p15_provincia LIKE "%Tierra del Fuego%"');
+    } else {
+      conditions.push('p15_provincia = ?');
+      params.push(provincia);
+    }
   } else if (region && region !== 'Todas' && REGIONES[region]) {
     const provs = REGIONES[region];
     const placeholders = provs.map(() => '?').join(',');
@@ -297,7 +304,6 @@ app.get('/api/survey/stats', async (req, res) => {
       ${whereSql ? `${whereSql} AND p15_provincia IS NOT NULL` : 'WHERE p15_provincia IS NOT NULL'}
       GROUP BY p15_provincia
       ORDER BY count DESC
-      LIMIT 12
     `, params);
 
     const [byGenero] = await pool.query(`

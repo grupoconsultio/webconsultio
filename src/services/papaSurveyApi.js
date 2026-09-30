@@ -10,16 +10,16 @@ const API_BASE_URL = import.meta.env.VITE_API_URL !== undefined
 
 // Mapeo geográfico de Provincias Argentinas por Región
 export const REGIONES_ARGENTINA = {
-  'GBA': ['Gran Buenos Aires', 'Buenos Aires - GBA', 'La Plata / Conurbano'],
-  'CABA': ['Ciudad Autónoma de Buenos Aires (CABA)'],
+  'GBA': ['Buenos Aires', 'Gran Buenos Aires', 'Buenos Aires - GBA', 'La Plata / Conurbano'],
+  'CABA': ['Ciudad Autónoma de Buenos Aires (CABA)', 'Ciudad Autónoma de Buenos Aires'],
   'Centro': ['Córdoba', 'Santa Fe', 'Entre Ríos', 'Interior Buenos Aires'],
   'Cuyo': ['Mendoza', 'San Juan', 'San Luis'],
   'NOA': ['Tucumán', 'Salta', 'Jujuy', 'Santiago del Estero', 'Catamarca', 'La Rioja'],
   'NEA': ['Chaco', 'Corrientes', 'Misiones', 'Formosa'],
-  'Patagonia': ['Río Negro', 'Neuquén', 'Chubut', 'Santa Cruz', 'Tierra del Fuego', 'La Pampa']
+  'Patagonia': ['Río Negro', 'Neuquén', 'Chubut', 'Santa Cruz', 'Tierra del Fuego', 'Tierra del Fuego, Antártida e Islas del Atlántico Sur', 'La Pampa']
 };
 
-export const TODAS_LAS_PROVINCIAS = Object.values(REGIONES_ARGENTINA).flat();
+export const TODAS_LAS_PROVINCIAS = Array.from(new Set(Object.values(REGIONES_ARGENTINA).flat()));
 
 // Estructura vacía cuando no hay conexión o no hay datos reales en la BBDD
 export const EMPTY_STATS = {
