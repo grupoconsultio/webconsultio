@@ -95,25 +95,12 @@ const INITIAL_CLIENT_WORKS = [
     category: 'Río Cuarto',
     createdAt: new Date('2026-03-06').toISOString(),
     createdBy: 'grupoconsultio'
-  },
-  {
-    id: 'work-rio-cuarto-informe',
-    clientFolderId: 'folder-rio-cuarto',
-    title: 'Informe Ejecutivo de Opinión Pública (Q1)',
-    description: 'Documento resumen de relevamiento socioeconómico trimestral.',
-    sourceType: 'file',
-    fileName: 'Informe_Ejecutivo_RioCuarto_Q1.pdf',
-    fileType: 'pdf',
-    fileSize: '2.4 MB',
-    fileData: '',
-    category: 'Informe',
-    createdAt: new Date('2026-03-08').toISOString(),
-    createdBy: 'grupoconsultio'
   }
 ];
 
 const inputCls = "w-full bg-[#131B2E] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-brand-cyan)] transition-colors text-white placeholder-slate-500 [&>option]:bg-[#131B2E] [&>option]:text-white";
 const selectCls = "w-full bg-[#131B2E] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-brand-cyan)] transition-colors text-white cursor-pointer [&>option]:bg-[#131B2E] [&>option]:text-white";
+const textareaCls = "w-full bg-[#131B2E] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-brand-cyan)] transition-colors text-white placeholder-slate-500 resize-none";
 
 const Admin = () => {
   const [activeTab, setActiveTab]         = useState('works'); // 'works' | 'users'
@@ -249,9 +236,16 @@ const Admin = () => {
       try {
         const snap = await getDocs(collection(db, 'client_works'));
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        // Eliminar el test Informe Ejecutivo de Opinión Pública (Q1) si existe en Firestore
+        const testItem = list.find(item => item.id === 'work-rio-cuarto-informe' || (item.title || '').includes('Informe Ejecutivo de Opinión Pública'));
+        if (testItem) {
+          try { await deleteDoc(doc(db, 'client_works', testItem.id)); } catch (e) {}
+        }
         
+        const filteredList = list.filter(item => item.id !== 'work-rio-cuarto-informe' && !(item.title || '').includes('Informe Ejecutivo de Opinión Pública'));
         const merged = [...INITIAL_CLIENT_WORKS];
-        list.forEach(item => {
+        filteredList.forEach(item => {
           if (!merged.some(m => m.id === item.id || m.title === item.title)) {
             merged.push(item);
           }
@@ -261,13 +255,15 @@ const Admin = () => {
         localStorage.setItem('clientWorks', JSON.stringify(merged));
       } catch (err) {
         const stored = JSON.parse(localStorage.getItem('clientWorks') || '[]');
+        const filteredStored = stored.filter(item => item.id !== 'work-rio-cuarto-informe' && !(item.title || '').includes('Informe Ejecutivo de Opinión Pública'));
         const merged = [...INITIAL_CLIENT_WORKS];
-        stored.forEach(item => {
+        filteredStored.forEach(item => {
           if (!merged.some(m => m.id === item.id || m.title === item.title)) {
             merged.push(item);
           }
         });
         setClientWorks(merged);
+        try { localStorage.setItem('clientWorks', JSON.stringify(merged)); } catch (e) {}
       }
     };
 
