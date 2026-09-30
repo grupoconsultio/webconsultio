@@ -671,13 +671,80 @@ app.get('/api/github/proxy/:owner/:repo/:branch/*', async (req, res) => {
   }
 });
 
-// 8. Carga y servicio de archivos para el gestor de trabajos (PDF, Excel, imágenes, etc.)
+// 8. Carga y servicio de archivos persistente para el gestor de trabajos (PDF, Excel, imágenes, etc.)
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) {
   try { fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch (e) {}
 }
-app.use('/uploads', express.static(UPLOADS_DIR));
 
+// Auto-crear tabla en MySQL al iniciar
+async function ensureUploadedFilesTable() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS uploaded_files (
+        id VARCHAR(190) PRIMARY KEY,
+        file_name VARCHAR(255) NOT NULL,
+        mime_type VARCHAR(100) NOT NULL,
+        file_size BIGINT NOT NULL,
+        file_data LONGBLOB NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('[ConsulDat] Tabla uploaded_files verificada en MySQL');
+  } catch (err) {
+    console.warn('[ConsulDat] Error verificando tabla uploaded_files:', err.message);
+  }
+}
+ensureUploadedFilesTable();
+
+// Endpoint para servir archivos: primero caché en disco, si no existe buscar en MySQL (sobrevive reinicios/rebuilds de contenedor)
+app.get('/uploads/:filename', async (req, res) => {
+  const filename = path.basename(req.params.filename);
+  const localFile = path.join(UPLOADS_DIR, filename);
+
+  const ext = path.extname(filename).toLowerCase();
+  const mimeTypes = {
+    '.pdf': 'application/pdf',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.webp': 'image/webp',
+    '.svg': 'image/svg+xml',
+    '.html': 'text/html; charset=utf-8',
+    '.htm': 'text/html; charset=utf-8',
+    '.txt': 'text/plain; charset=utf-8',
+    '.csv': 'text/csv; charset=utf-8',
+    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    '.xls': 'application/vnd.ms-excel'
+  };
+  const mimeType = mimeTypes[ext] || 'application/octet-stream';
+
+  res.setHeader('Content-Type', mimeType);
+  res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(filename)}"`);
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+
+  // 1. Si está en caché de disco
+  if (fs.existsSync(localFile)) {
+    return res.sendFile(localFile);
+  }
+
+  // 2. Si el contenedor se recreó o no está en disco, recuperar de MySQL
+  try {
+    const [rows] = await pool.query('SELECT file_name, mime_type, file_data FROM uploaded_files WHERE id = ?', [filename]);
+    if (rows && rows.length > 0) {
+      const fileData = rows[0].file_data;
+      try { fs.writeFileSync(localFile, fileData); } catch (e) {}
+      if (rows[0].mime_type) res.setHeader('Content-Type', rows[0].mime_type);
+      return res.send(fileData);
+    }
+  } catch (err) {
+    console.error('[ConsulDat] Error recuperando archivo de MySQL:', err.message);
+  }
+
+  return res.status(404).send('Archivo no encontrado');
+});
+
+// Guardar archivo tanto en MySQL (persistente) como en disco (caché rápida)
 app.post('/api/upload', async (req, res) => {
   try {
     const { name, dataUrl } = req.body;
@@ -685,9 +752,25 @@ app.post('/api/upload', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Nombre o datos de archivo faltantes' });
     }
     const safeName = `${Date.now()}_${name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-    const base64Data = dataUrl.replace(/^data:([A-Za-z0-9-+/]+);base64,/, '');
+    const base64Match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    const mimeType = base64Match ? base64Match[1] : (name.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
+    const base64Data = base64Match ? base64Match[2] : dataUrl.replace(/^data:[^;]+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
+
+    // 1. Guardar en disco local como caché inmediata
     fs.writeFileSync(path.join(UPLOADS_DIR, safeName), buffer);
+
+    // 2. Guardar en MySQL permanentemente para que nunca se pierda en rebuilds
+    try {
+      await pool.query(
+        'INSERT INTO uploaded_files (id, file_name, mime_type, file_size, file_data) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE file_data = VALUES(file_data)',
+        [safeName, name, mimeType, buffer.length, buffer]
+      );
+      console.log(`[ConsulDat] Archivo ${safeName} guardado permanentemente en MySQL (${buffer.length} bytes)`);
+    } catch (dbErr) {
+      console.warn('[ConsulDat] Advertencia: No se pudo persistir en MySQL, quedó en disco:', dbErr.message);
+    }
+
     const fileUrl = `/uploads/${safeName}`;
     res.json({ success: true, url: fileUrl });
   } catch (err) {
@@ -709,7 +792,9 @@ if (distPath) {
   app.use(express.static(distPath));
 
   app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api/')) return next();
+    if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
+      return res.status(404).send('Recurso no encontrado');
+    }
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }

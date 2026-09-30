@@ -1571,7 +1571,7 @@ const Admin = () => {
 
                 {/* Acciones de la Barra Superior */}
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {/* Botón Abrir en Nueva Pestaña (URLs y Tableros desplegados en servidor) */}
+                  {/* Botón Abrir en Nueva Pestaña (URLs, Tableros desplegados en servidor y Archivos) */}
                   {(activePreviewWork.sourceType === 'url' || activePreviewWork.sourceType === 'github') && (
                     <a
                       href={getWorkDeployUrl(activePreviewWork)}
@@ -1584,13 +1584,23 @@ const Admin = () => {
                   )}
 
                   {activePreviewWork.sourceType === 'file' && activePreviewWork.fileData && (
-                    <a
-                      href={activePreviewWork.fileData}
-                      download={activePreviewWork.fileName || 'archivo'}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-600/30 border border-emerald-500/40 text-xs font-semibold text-emerald-200 hover:text-white hover:bg-emerald-600/50 flex items-center gap-1.5 transition-colors"
-                    >
-                      <Download size={14} /> <span className="hidden sm:inline">Descargar</span>
-                    </a>
+                    <>
+                      <a
+                        href={activePreviewWork.fileData}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-semibold text-slate-200 hover:text-white hover:bg-white/10 flex items-center gap-1.5 transition-colors"
+                      >
+                        <ExternalLink size={14} /> <span className="hidden sm:inline">Abrir en Pestaña</span>
+                      </a>
+                      <a
+                        href={activePreviewWork.fileData}
+                        download={activePreviewWork.fileName || 'archivo'}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600/30 border border-emerald-500/40 text-xs font-semibold text-emerald-200 hover:text-white hover:bg-emerald-600/50 flex items-center gap-1.5 transition-colors"
+                      >
+                        <Download size={14} /> <span className="hidden sm:inline">Descargar</span>
+                      </a>
+                    </>
                   )}
 
                   {/* Toggle Pantalla Completa */}
@@ -1646,17 +1656,32 @@ const Admin = () => {
 
                 {/* 2. Visor de Archivos (PDF, HTML, TXT, Excel, etc.) */}
                 {activePreviewWork.sourceType === 'file' && (
-                  <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                  <div className="w-full h-full flex flex-col items-center justify-center p-0">
                     {/* PDF o HTML interactivo cargado como archivo */}
                     {activePreviewWork.fileType === 'pdf' || activePreviewWork.fileType === 'html' || activePreviewWork.fileType === 'htm' ? (
                       activePreviewWork.fileData ? (
-                        <iframe
-                          src={activePreviewWork.fileData}
-                          title={activePreviewWork.fileName}
-                          className="w-full h-full border-0 rounded-xl"
-                          scrolling="yes"
-                          style={{ width: '100%', height: '100%' }}
-                        />
+                        <div className="w-full h-full flex flex-col bg-white">
+                          <iframe
+                            src={`${activePreviewWork.fileData}${activePreviewWork.fileType === 'pdf' ? '#toolbar=1&navpanes=0' : ''}`}
+                            title={activePreviewWork.fileName}
+                            className="w-full h-full border-0 bg-white"
+                            scrolling="yes"
+                            style={{ width: '100%', height: '100%', backgroundColor: '#ffffff' }}
+                          />
+                          {activePreviewWork.fileType === 'pdf' && (
+                            <div className="w-full py-1.5 px-4 bg-slate-900 border-t border-white/10 text-[11px] flex items-center justify-between text-slate-400 flex-shrink-0">
+                              <span className="truncate max-w-[280px] sm:max-w-none">Documento PDF: <strong className="text-white">{activePreviewWork.fileName}</strong></span>
+                              <div className="flex items-center gap-3">
+                                <a href={activePreviewWork.fileData} target="_blank" rel="noopener noreferrer" className="text-[var(--color-brand-cyan)] font-semibold hover:underline flex items-center gap-1">
+                                  Abrir en pestaña <ExternalLink size={11} />
+                                </a>
+                                <a href={activePreviewWork.fileData} download={activePreviewWork.fileName} className="text-emerald-400 font-semibold hover:underline flex items-center gap-1">
+                                  Descargar <Download size={11} />
+                                </a>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       ) : (
                         <div className="text-center p-8 glass-elevated rounded-2xl max-w-md">
                           <FileText size={48} className="mx-auto text-rose-400 mb-3" />
