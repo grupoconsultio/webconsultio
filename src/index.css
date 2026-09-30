@@ -59,6 +59,17 @@
   @apply bg-white/10 rounded-full hover:bg-white/20;
 }
 
+/* Select Dropdown Dark Styling */
+select {
+  color-scheme: dark !important;
+}
+
+select option {
+  background-color: #111827 !important;
+  color: #ffffff !important;
+  padding: 8px 12px !important;
+}
+
 /* Leaflet Custom Tooltips */
 .leaflet-custom-dark {
   background-color: #0f172a !important;

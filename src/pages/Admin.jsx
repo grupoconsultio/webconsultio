@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Briefcase,
@@ -10,12 +10,10 @@ import {
   X,
   LogOut,
   ShieldCheck,
-  FileBarChart,
   Folder,
   FolderPlus,
   ExternalLink,
   UserPlus,
-  MapPin,
   Eye,
   FileText,
   FileSpreadsheet,
@@ -31,7 +29,14 @@ import {
   Clock,
   Sparkles,
   Layers,
-  FolderArchive
+  FolderArchive,
+  RefreshCw,
+  Maximize2,
+  Minimize2,
+  Lock,
+  Unlock,
+  Check,
+  AlertCircle
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -39,66 +44,60 @@ import { db, storage } from '../firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-// Encuestas predeterminadas
-const DEFAULT_SURVEYS = [
+// ═══════════════════════════════════════════════════════════════
+// CARPETAS DE CLIENTES INICIALES
+// (CONSULTIO para Visita Papal y Municipalidad de Río Cuarto para Mapa)
+// ═══════════════════════════════════════════════════════════════
+const INITIAL_CLIENT_FOLDERS = [
   {
-    id: 'visita-papal-dashboard',
-    title: 'Visita Papal a la Argentina',
-    category: 'Opinión Pública',
-    description: 'Dashboard de Business Intelligence con métricas en tiempo real, matriz de impactos y auditoría de sorteo.',
-    link: '/admin/encuesta-papa',
-    isInternal: true,
-    badge: 'Nacional'
-  },
-  {
-    id: 'rio-cuarto-mapa',
-    title: 'Encuesta Río Cuarto',
-    category: 'Río Cuarto',
-    description: 'Mapa interactivo de indicadores socioeconómicos, obras y gestión pública.',
-    link: '/mapa',
-    isInternal: true,
-    badge: 'Río Cuarto'
-  }
-];
-
-// Carpetas de clientes demostración iniciales
-const DEFAULT_CLIENT_FOLDERS = [
-  {
-    id: 'folder-demo-1',
-    name: 'Municipalidad de Río Cuarto',
-    assignedUser: 'lector',
-    industry: 'Sector Público',
-    description: 'Monitoreo territorial, indicadores de gestión y satisfacción ciudadana.',
+    id: 'folder-consultio',
+    name: 'CONSULTIO',
+    assignedUsers: ['grupoconsultio', 'todos'],
+    industry: 'Investigación & Opinión Pública',
+    description: 'Carpeta institucional de ConsulDat / Grupo Consultio. Tableros federales y estudios nacionales.',
     createdAt: new Date('2026-03-01').toISOString(),
     createdBy: 'grupoconsultio'
   },
   {
-    id: 'folder-demo-2',
-    name: 'Ministerio de Innovación & Producción',
-    assignedUser: 'todos',
-    industry: 'Sector Gubernamental',
-    description: 'Tableros de impacto productivo, empleo y desarrollo territorial.',
-    createdAt: new Date('2026-03-10').toISOString(),
+    id: 'folder-rio-cuarto',
+    name: 'Municipalidad de Río Cuarto',
+    assignedUsers: ['grupoconsultio', 'lector'],
+    industry: 'Sector Público',
+    description: 'Gestión de indicadores territoriales, relevamiento socioeconómico y obras públicas.',
+    createdAt: new Date('2026-03-05').toISOString(),
     createdBy: 'grupoconsultio'
   }
 ];
 
-// Trabajos de muestra iniciales
-const DEFAULT_CLIENT_WORKS = [
+// ═══════════════════════════════════════════════════════════════
+// TRABAJOS CARGADOS INICIALES
+// ═══════════════════════════════════════════════════════════════
+const INITIAL_CLIENT_WORKS = [
   {
-    id: 'work-demo-1',
-    clientFolderId: 'folder-demo-1',
-    title: 'Mapa Interactivo de Obras y Servicios',
-    description: 'Georreferenciación de indicadores de infraestructura y demanda social.',
+    id: 'work-visita-papal',
+    clientFolderId: 'folder-consultio',
+    title: 'Visita Papal a la Argentina',
+    description: 'Dashboard de Business Intelligence con métricas en tiempo real, matriz de impactos y auditoría de sorteo.',
     sourceType: 'url',
-    url: '/mapa',
-    category: 'Tablero Web',
+    url: '/admin/encuesta-papa',
+    category: 'Opinión Pública',
     createdAt: new Date('2026-03-02').toISOString(),
     createdBy: 'grupoconsultio'
   },
   {
-    id: 'work-demo-2',
-    clientFolderId: 'folder-demo-1',
+    id: 'work-rio-cuarto-mapa',
+    clientFolderId: 'folder-rio-cuarto',
+    title: 'Encuesta Río Cuarto',
+    description: 'Mapa interactivo de indicadores socioeconómicos, obras y opinión pública.',
+    sourceType: 'url',
+    url: '/mapa',
+    category: 'Río Cuarto',
+    createdAt: new Date('2026-03-06').toISOString(),
+    createdBy: 'grupoconsultio'
+  },
+  {
+    id: 'work-rio-cuarto-informe',
+    clientFolderId: 'folder-rio-cuarto',
     title: 'Informe Ejecutivo de Opinión Pública (Q1)',
     description: 'Documento resumen de relevamiento socioeconómico trimestral.',
     sourceType: 'file',
@@ -107,39 +106,16 @@ const DEFAULT_CLIENT_WORKS = [
     fileSize: '2.4 MB',
     fileData: '',
     category: 'Informe',
-    createdAt: new Date('2026-03-05').toISOString(),
-    createdBy: 'grupoconsultio'
-  },
-  {
-    id: 'work-demo-3',
-    clientFolderId: 'folder-demo-1',
-    title: 'Tablero de Control GitHub',
-    description: 'Visualizador de datos desplegado desde repositorio GitHub.',
-    sourceType: 'github',
-    githubRepo: 'grupoconsultio/mapa-obras',
-    githubBranch: 'main',
-    githubPath: 'index.html',
-    category: 'Repositorio',
     createdAt: new Date('2026-03-08').toISOString(),
-    createdBy: 'grupoconsultio'
-  },
-  {
-    id: 'work-demo-4',
-    clientFolderId: 'folder-demo-2',
-    title: 'Tablero Federal de Opinión Visita Papal',
-    description: 'Dashboard analítico con cruces demográficos y cobertura federal.',
-    sourceType: 'url',
-    url: '/admin/encuesta-papa',
-    category: 'Business Intelligence',
-    createdAt: new Date('2026-03-12').toISOString(),
     createdBy: 'grupoconsultio'
   }
 ];
 
-const inputCls = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-brand-cyan)] transition-colors text-white placeholder-slate-500";
+const inputCls = "w-full bg-[#131B2E] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-brand-cyan)] transition-colors text-white placeholder-slate-500 [&>option]:bg-[#131B2E] [&>option]:text-white";
+const selectCls = "w-full bg-[#131B2E] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-brand-cyan)] transition-colors text-white cursor-pointer [&>option]:bg-[#131B2E] [&>option]:text-white";
 
 const Admin = () => {
-  const [activeTab, setActiveTab]         = useState('works'); // 'works' | 'surveys' | 'users'
+  const [activeTab, setActiveTab]         = useState('works'); // 'works' | 'users'
   const [sidebarOpen, setSidebarOpen]     = useState(false);
   
   // Roles y Usuarios
@@ -148,18 +124,10 @@ const Admin = () => {
   const [appUsers, setAppUsers]           = useState([]);
   const [newUser, setNewUser]             = useState({ username: '', password: '', role: 'lector' });
 
-  // Encuestas
-  const [surveys, setSurveys]             = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('Todas');
-  const [showSurveyForm, setShowSurveyForm]       = useState(false);
-  const [newSurvey, setNewSurvey]         = useState({ title: '', category: 'Río Cuarto', description: '', link: '/mapa', badge: 'Río Cuarto' });
-
-  // ═══════════════════════════════════════════════════════════════
-  // ESTADOS DE "TRABAJOS" Y CARPETAS DE CLIENTES
-  // ═══════════════════════════════════════════════════════════════
+  // Carpetas de clientes y Trabajos
   const [clientFolders, setClientFolders] = useState([]);
   const [clientWorks, setClientWorks]     = useState([]);
-  const [selectedFolder, setSelectedFolder] = useState(null); // Carpeta abierta actualmente
+  const [selectedFolder, setSelectedFolder] = useState(null);
   const [folderSearch, setFolderSearch]   = useState('');
   const [workFilter, setWorkFilter]       = useState('todos'); // 'todos' | 'file' | 'url' | 'github'
   const [workSearch, setWorkSearch]       = useState('');
@@ -167,11 +135,13 @@ const Admin = () => {
   // Modales
   const [showAddFolderModal, setShowAddFolderModal] = useState(false);
   const [showAddWorkModal, setShowAddWorkModal]     = useState(false);
+  const [activePreviewWork, setActivePreviewWork]   = useState(null); // Modal de visualización
+  const [isFullscreenPreview, setIsFullscreenPreview] = useState(false);
 
   // Formulario Nuevo Cliente / Carpeta
   const [newFolder, setNewFolder] = useState({
     name: '',
-    assignedUser: 'todos',
+    assignedUsers: ['grupoconsultio'], // Multi-usuario por defecto con el admin
     industry: '',
     description: ''
   });
@@ -191,6 +161,19 @@ const Admin = () => {
   const [uploadedFileObj, setUploadedFileObj] = useState(null);
   const [isUploading, setIsUploading]         = useState(false);
 
+  // ═══════════════════════════════════════════════════════════════
+  // INTEGRACIÓN CON GITHUB (Idéntica al proyecto de referencia)
+  // ═══════════════════════════════════════════════════════════════
+  const [githubToken, setGithubToken]         = useState(() => sessionStorage.getItem('github_token') || localStorage.getItem('github_token') || '');
+  const [githubUser, setGithubUser]           = useState(() => sessionStorage.getItem('github_user') || localStorage.getItem('github_user') || '');
+  const [githubRepos, setGithubRepos]         = useState([]);
+  const [githubBranches, setGithubBranches]   = useState(['main']);
+  const [isLoadingRepos, setIsLoadingRepos]   = useState(false);
+  const [isLoadingBranches, setIsLoadingBranches] = useState(false);
+  const [showGithubConnectModal, setShowGithubConnectModal] = useState(false);
+  const [tokenInput, setTokenInput]           = useState('');
+  const [tokenError, setTokenError]           = useState('');
+
   const navigate = useNavigate();
 
   // ── CARGA INICIAL DE DATOS ─────────────────────────────────
@@ -205,7 +188,7 @@ const Admin = () => {
     setUserRole(role);
     setUserName(name);
 
-    // Cargar Usuarios de Firestore / LocalStorage
+    // Cargar Usuarios
     const fetchUsers = async () => {
       try {
         const snap = await getDocs(collection(db, 'users'));
@@ -213,47 +196,35 @@ const Admin = () => {
         setAppUsers(list);
         localStorage.setItem('appUsers', JSON.stringify(list));
       } catch (err) {
-        console.warn('Fallback local para usuarios:', err);
         setAppUsers(JSON.parse(localStorage.getItem('appUsers') || '[]'));
       }
     };
 
-    // Cargar Encuestas
-    const fetchSurveys = async () => {
-      try {
-        const snap = await getDocs(collection(db, 'surveys'));
-        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        const merged = [...DEFAULT_SURVEYS];
-        list.forEach(item => {
-          if (!merged.some(m => m.id === item.id)) merged.push(item);
-        });
-        setSurveys(merged);
-        localStorage.setItem('appSurveys', JSON.stringify(merged));
-      } catch (err) {
-        const storedSurveys = JSON.parse(localStorage.getItem('appSurveys') || '[]');
-        const merged = [...DEFAULT_SURVEYS];
-        storedSurveys.forEach(item => {
-          if (!merged.some(m => m.id === item.id)) merged.push(item);
-        });
-        setSurveys(merged);
-      }
-    };
-
-    // Cargar Carpetas de Clientes
+    // Cargar Carpetas de Clientes (con migración de las dos carpetas base)
     const fetchFolders = async () => {
       try {
         const snap = await getDocs(collection(db, 'client_folders'));
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        if (list.length > 0) {
-          setClientFolders(list);
-          localStorage.setItem('clientFolders', JSON.stringify(list));
-        } else {
-          const stored = JSON.parse(localStorage.getItem('clientFolders') || '[]');
-          setClientFolders(stored.length > 0 ? stored : DEFAULT_CLIENT_FOLDERS);
-        }
+        
+        // Merge asegurando CONSULTIO y Municipalidad de Río Cuarto
+        const merged = [...INITIAL_CLIENT_FOLDERS];
+        list.forEach(item => {
+          if (!merged.some(m => m.id === item.id || m.name === item.name)) {
+            merged.push(item);
+          }
+        });
+
+        setClientFolders(merged);
+        localStorage.setItem('clientFolders', JSON.stringify(merged));
       } catch (err) {
         const stored = JSON.parse(localStorage.getItem('clientFolders') || '[]');
-        setClientFolders(stored.length > 0 ? stored : DEFAULT_CLIENT_FOLDERS);
+        const merged = [...INITIAL_CLIENT_FOLDERS];
+        stored.forEach(item => {
+          if (!merged.some(m => m.id === item.id || m.name === item.name)) {
+            merged.push(item);
+          }
+        });
+        setClientFolders(merged);
       }
     };
 
@@ -262,24 +233,39 @@ const Admin = () => {
       try {
         const snap = await getDocs(collection(db, 'client_works'));
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        if (list.length > 0) {
-          setClientWorks(list);
-          localStorage.setItem('clientWorks', JSON.stringify(list));
-        } else {
-          const stored = JSON.parse(localStorage.getItem('clientWorks') || '[]');
-          setClientWorks(stored.length > 0 ? stored : DEFAULT_CLIENT_WORKS);
-        }
+        
+        const merged = [...INITIAL_CLIENT_WORKS];
+        list.forEach(item => {
+          if (!merged.some(m => m.id === item.id || m.title === item.title)) {
+            merged.push(item);
+          }
+        });
+
+        setClientWorks(merged);
+        localStorage.setItem('clientWorks', JSON.stringify(merged));
       } catch (err) {
         const stored = JSON.parse(localStorage.getItem('clientWorks') || '[]');
-        setClientWorks(stored.length > 0 ? stored : DEFAULT_CLIENT_WORKS);
+        const merged = [...INITIAL_CLIENT_WORKS];
+        stored.forEach(item => {
+          if (!merged.some(m => m.id === item.id || m.title === item.title)) {
+            merged.push(item);
+          }
+        });
+        setClientWorks(merged);
       }
     };
 
     fetchUsers();
-    fetchSurveys();
     fetchFolders();
     fetchWorks();
   }, [navigate]);
+
+  // Si hay token de GitHub, cargar los repositorios al iniciar
+  useEffect(() => {
+    if (githubToken) {
+      loadGitHubRepos(githubToken);
+    }
+  }, [githubToken]);
 
   const handleLogout = () => {
     sessionStorage.removeItem('adminAuth');
@@ -294,15 +280,134 @@ const Admin = () => {
   };
 
   // ═══════════════════════════════════════════════════════════════
-  // GESTIÓN DE CLIENTES / CARPETAS (TAB: TRABAJOS)
+  // FUNCIONES DE GITHUB (API REST DIRECTA + AUTENTICACIÓN)
   // ═══════════════════════════════════════════════════════════════
+  const loadGitHubRepos = async (token) => {
+    if (!token) return;
+    setIsLoadingRepos(true);
+    try {
+      const res = await fetch('https://api.github.com/user/repos?per_page=100&sort=updated', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+      if (!res.ok) throw new Error('No se pudieron obtener los repositorios.');
+      const repos = await res.json();
+      setGithubRepos(repos);
+      if (repos.length > 0 && !newWork.githubRepo) {
+        setNewWork(prev => ({ ...prev, githubRepo: repos[0].full_name }));
+        loadGitHubBranches(token, repos[0].full_name);
+      }
+    } catch (err) {
+      console.warn('Error cargando repositorios:', err.message);
+    } finally {
+      setIsLoadingRepos(false);
+    }
+  };
+
+  const loadGitHubBranches = async (token, repoFullName) => {
+    if (!token || !repoFullName) return;
+    setIsLoadingBranches(true);
+    try {
+      const res = await fetch(`https://api.github.com/repos/${repoFullName}/branches`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+      if (res.ok) {
+        const branches = await res.json();
+        const branchNames = branches.map(b => b.name);
+        setGithubBranches(branchNames.length > 0 ? branchNames : ['main']);
+        if (branchNames.length > 0 && !branchNames.includes(newWork.githubBranch)) {
+          setNewWork(prev => ({ ...prev, githubBranch: branchNames.includes('main') ? 'main' : branchNames[0] }));
+        }
+      }
+    } catch (err) {
+      console.warn('Error cargando ramas:', err);
+      setGithubBranches(['main']);
+    } finally {
+      setIsLoadingBranches(false);
+    }
+  };
+
+  const handleConnectGitHub = async (e) => {
+    e?.preventDefault();
+    const token = tokenInput.trim();
+    if (!token) {
+      setTokenError('Por favor ingresa un Personal Access Token de GitHub.');
+      return;
+    }
+
+    setTokenError('');
+    try {
+      const res = await fetch('https://api.github.com/user', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+      if (!res.ok) throw new Error('Token inválido o sin permisos.');
+      const user = await res.json();
+      const login = user.login || 'usuario';
+
+      setGithubToken(token);
+      setGithubUser(login);
+      sessionStorage.setItem('github_token', token);
+      sessionStorage.setItem('github_user', login);
+      localStorage.setItem('github_token', token);
+      localStorage.setItem('github_user', login);
+
+      setShowGithubConnectModal(false);
+      setTokenInput('');
+      await loadGitHubRepos(token);
+    } catch (err) {
+      setTokenError(err.message || 'Error al autenticar con GitHub.');
+    }
+  };
+
+  const handleDisconnectGitHub = () => {
+    setGithubToken('');
+    setGithubUser('');
+    setGithubRepos([]);
+    sessionStorage.removeItem('github_token');
+    sessionStorage.removeItem('github_user');
+    localStorage.removeItem('github_token');
+    localStorage.removeItem('github_user');
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // GESTIÓN DE CLIENTES / CARPETAS (MULTI-USUARIO Y ADMIN)
+  // ═══════════════════════════════════════════════════════════════
+  const toggleUserInFolder = (userToToggle) => {
+    setNewFolder(prev => {
+      const exists = prev.assignedUsers.includes(userToToggle);
+      if (exists) {
+        // No permitir deseleccionar todo si queda vacío
+        return {
+          ...prev,
+          assignedUsers: prev.assignedUsers.filter(u => u !== userToToggle)
+        };
+      } else {
+        return {
+          ...prev,
+          assignedUsers: [...prev.assignedUsers, userToToggle]
+        };
+      }
+    });
+  };
+
   const handleCreateFolder = async (e) => {
     e.preventDefault();
     if (!newFolder.name.trim()) return;
 
+    // Asegurar que al menos el admin esté incluido si no se seleccionó ninguno
+    const assigned = newFolder.assignedUsers.length > 0 ? newFolder.assignedUsers : ['grupoconsultio'];
+
     const folderObj = {
       name: newFolder.name.trim(),
-      assignedUser: newFolder.assignedUser || 'todos',
+      assignedUsers: assigned,
       industry: newFolder.industry.trim() || 'General',
       description: newFolder.description.trim(),
       createdAt: new Date().toISOString(),
@@ -316,14 +421,13 @@ const Admin = () => {
       setClientFolders(updated);
       localStorage.setItem('clientFolders', JSON.stringify(updated));
     } catch (err) {
-      console.warn('Error guardando carpeta en Firestore, guardando en local:', err);
       const created = { ...folderObj, id: `folder-${Date.now()}` };
       const updated = [created, ...clientFolders];
       setClientFolders(updated);
       localStorage.setItem('clientFolders', JSON.stringify(updated));
     }
 
-    setNewFolder({ name: '', assignedUser: 'todos', industry: '', description: '' });
+    setNewFolder({ name: '', assignedUsers: ['grupoconsultio'], industry: '', description: '' });
     setShowAddFolderModal(false);
   };
 
@@ -341,7 +445,6 @@ const Admin = () => {
     setClientFolders(updatedFolders);
     localStorage.setItem('clientFolders', JSON.stringify(updatedFolders));
 
-    // Eliminar trabajos asociados
     const updatedWorks = clientWorks.filter(w => w.clientFolderId !== folderId);
     setClientWorks(updatedWorks);
     localStorage.setItem('clientWorks', JSON.stringify(updatedWorks));
@@ -352,7 +455,7 @@ const Admin = () => {
   };
 
   // ═══════════════════════════════════════════════════════════════
-  // GESTIÓN DE TRABAJOS (CARGA: ARCHIVO, ENLACE, GITHUB)
+  // GESTIÓN DE TRABAJOS (CARGA Y VISUALIZADOR)
   // ═══════════════════════════════════════════════════════════════
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -368,7 +471,7 @@ const Admin = () => {
         size: `${sizeInMb} MB`,
         type: ext,
         rawFile: file,
-        dataUrl: event.target.result // Base64 data URL para preview y descarga directa
+        dataUrl: event.target.result
       });
     };
     reader.readAsDataURL(file);
@@ -383,9 +486,7 @@ const Admin = () => {
     let fileUrl = '';
     let storagePath = '';
 
-    // Si es tipo archivo y tenemos archivo seleccionado
     if (newWork.sourceType === 'file' && uploadedFileObj?.rawFile) {
-      // Intentar subir a Firebase Storage
       try {
         const filePath = `client_works/${selectedFolder.id}/${Date.now()}_${uploadedFileObj.name}`;
         const storageRef = ref(storage, filePath);
@@ -393,8 +494,6 @@ const Admin = () => {
         fileUrl = await getDownloadURL(storageRef);
         storagePath = filePath;
       } catch (err) {
-        console.warn('Firebase Storage no disponible o sin permiso, usando DataURL seguro:', err);
-        // Fallback a Base64 DataURL
         fileUrl = uploadedFileObj.dataUrl || '';
       }
     }
@@ -425,7 +524,6 @@ const Admin = () => {
       setClientWorks(updated);
       localStorage.setItem('clientWorks', JSON.stringify(updated));
     } catch (err) {
-      console.warn('Error guardando trabajo en Firestore, guardando en local:', err);
       const created = { ...workObj, id: `work-${Date.now()}` };
       const updated = [created, ...clientWorks];
       setClientWorks(updated);
@@ -439,7 +537,7 @@ const Admin = () => {
       category: 'Tablero',
       sourceType: 'url',
       url: '',
-      githubRepo: '',
+      githubRepo: githubRepos[0]?.full_name || '',
       githubBranch: 'main',
       githubPath: 'index.html',
       githubUrl: ''
@@ -461,10 +559,14 @@ const Admin = () => {
     const updated = clientWorks.filter(w => w.id !== workId);
     setClientWorks(updated);
     localStorage.setItem('clientWorks', JSON.stringify(updated));
+
+    if (activePreviewWork?.id === workId) {
+      setActivePreviewWork(null);
+    }
   };
 
   // ═══════════════════════════════════════════════════════════════
-  // GESTIÓN DE USUARIOS (TAB: USUARIOS)
+  // GESTIÓN DE USUARIOS
   // ═══════════════════════════════════════════════════════════════
   const handleAddUser = async (e) => {
     e.preventDefault();
@@ -495,9 +597,8 @@ const Admin = () => {
       const updated = [...appUsers, created];
       setAppUsers(updated);
       localStorage.setItem('appUsers', JSON.stringify(updated));
-      alert(`¡Usuario "${cleanName}" creado exitosamente! Ahora puedes asignarle una carpeta en la pestaña Trabajos.`);
+      alert(`¡Usuario "${cleanName}" creado exitosamente! Ahora puedes asignarle carpetas en "Trabajos".`);
     } catch (err) {
-      console.warn('Error guardando en Firestore, guardando localmente:', err);
       const created = { ...userObj, id: Date.now().toString() };
       const updated = [...appUsers, created];
       setAppUsers(updated);
@@ -521,70 +622,29 @@ const Admin = () => {
   };
 
   // ═══════════════════════════════════════════════════════════════
-  // GESTIÓN DE ENCUESTAS (TAB: ENCUESTAS)
-  // ═══════════════════════════════════════════════════════════════
-  const handleAddSurvey = async (e) => {
-    e.preventDefault();
-    if (!newSurvey.title || !newSurvey.link) return;
-    const isInternal = newSurvey.link.startsWith('/');
-    const surveyObj = { ...newSurvey, isInternal, createdAt: new Date().toISOString() };
-
-    try {
-      const docRef = await addDoc(collection(db, 'surveys'), surveyObj);
-      const created = { ...surveyObj, id: docRef.id };
-      const updated = [...surveys, created];
-      setSurveys(updated);
-      localStorage.setItem('appSurveys', JSON.stringify(updated));
-    } catch (err) {
-      const created = { ...surveyObj, id: Date.now().toString() };
-      const updated = [...surveys, created];
-      setSurveys(updated);
-      localStorage.setItem('appSurveys', JSON.stringify(updated));
-    }
-
-    setNewSurvey({ title: '', category: 'Río Cuarto', description: '', link: '/mapa', badge: 'Río Cuarto' });
-    setShowSurveyForm(false);
-  };
-
-  const handleDeleteSurvey = async (id) => {
-    try {
-      await deleteDoc(doc(db, 'surveys', id));
-    } catch (err) {
-      console.warn('Error eliminando encuesta en Firestore:', err);
-    }
-    const updated = surveys.filter(s => s.id !== id);
-    setSurveys(updated);
-    localStorage.setItem('appSurveys', JSON.stringify(updated));
-  };
-
-  // ═══════════════════════════════════════════════════════════════
   // FILTRADO Y PERMISOS
   // ═══════════════════════════════════════════════════════════════
-  // Pestañas disponibles en Sidebar
   const navItems = userRole === 'lector'
-    ? [
-        { key: 'works', label: 'Trabajos', icon: Briefcase },
-        { key: 'surveys', label: 'Encuestas', icon: FileBarChart }
-      ]
+    ? [{ key: 'works', label: 'Trabajos', icon: Briefcase }]
     : [
         { key: 'works', label: 'Trabajos', icon: Briefcase },
-        { key: 'surveys', label: 'Encuestas', icon: FileBarChart },
         { key: 'users', label: 'Usuarios', icon: ShieldCheck }
       ];
 
   // Carpetas accesibles para el usuario actual
   const accessibleFolders = clientFolders.filter(folder => {
     if (userRole === 'administrador') return true;
-    // Si es lector, ve las carpetas asignadas a su username o con acceso para 'todos'
-    return folder.assignedUser === userName || folder.assignedUser === 'todos';
+    const usersList = folder.assignedUsers || [folder.assignedUser || ''];
+    return usersList.includes(userName) || usersList.includes('todos');
   });
 
   const filteredFolders = accessibleFolders.filter(f => {
     const q = folderSearch.toLowerCase();
+    const assignedStr = (f.assignedUsers || [f.assignedUser || '']).join(' ').toLowerCase();
     return (
       (f.name || '').toLowerCase().includes(q) ||
       (f.industry || '').toLowerCase().includes(q) ||
-      (f.assignedUser || '').toLowerCase().includes(q)
+      assignedStr.includes(q)
     );
   });
 
@@ -602,50 +662,50 @@ const Admin = () => {
     return matchesType && matchesSearch;
   });
 
-  const categories = ['Todas', ...Array.from(new Set(surveys.map(s => s.category || 'General')))];
-  const filteredSurveys = selectedCategory === 'Todas'
-    ? surveys
-    : surveys.filter(s => s.category === selectedCategory);
-
   const tabLabel = navItems.find(n => n.key === activeTab)?.label ?? 'Trabajos';
 
-  // Helper para renderizar iconos según tipo de archivo o fuente
+  // Renderizar icono por tipo de trabajo
   const renderWorkIcon = (work) => {
     if (work.sourceType === 'github') {
       return (
-        <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
+        <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
           <FileCode size={20} />
         </div>
       );
     }
     if (work.sourceType === 'url') {
       return (
-        <div className="w-10 h-10 rounded-xl bg-[var(--color-brand-cyan)]/10 border border-[var(--color-brand-cyan)]/30 flex items-center justify-center text-[var(--color-brand-cyan)]">
+        <div className="w-10 h-10 rounded-xl bg-[var(--color-brand-cyan)]/15 border border-[var(--color-brand-cyan)]/30 flex items-center justify-center text-[var(--color-brand-cyan)]">
           <Globe size={20} />
         </div>
       );
     }
-    // Tipo file
     const ext = (work.fileType || '').toLowerCase();
     if (['xlsx', 'xls', 'csv'].includes(ext)) {
       return (
-        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+        <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
           <FileSpreadsheet size={20} />
         </div>
       );
     }
     if (ext === 'pdf') {
       return (
-        <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
+        <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
           <FileText size={20} />
         </div>
       );
     }
     return (
-      <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
+      <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
         <File size={20} />
       </div>
     );
+  };
+
+  // Helper para generar URL de visualización de GitHub
+  const getGitHubPreviewUrl = (work) => {
+    if (!work.githubRepo) return '';
+    return `https://github.com/${work.githubRepo}/blob/${work.githubBranch || 'main'}/${work.githubPath || 'index.html'}`;
   };
 
   return (
@@ -659,11 +719,13 @@ const Admin = () => {
             <span className="text-sm font-display font-light tracking-[0.2em] text-brand-secondary">GRUPO</span>
             <span className="text-2xl font-display font-extrabold tracking-tight text-white">CONSULTIO</span>
           </div>
-          <button className="lg:hidden p-1 text-brand-secondary hover:text-white" onClick={() => setSidebarOpen(false)}><X size={20} /></button>
+          <button className="lg:hidden p-1 text-brand-secondary hover:text-white" onClick={() => setSidebarOpen(false)}>
+            <X size={20} />
+          </button>
         </div>
 
         {/* User Card Header */}
-        <div className="mb-6 p-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
+        <div className="mb-6 p-3 rounded-xl bg-[#131B2E] border border-white/10 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-[var(--color-brand-cyan)]/20 border border-[var(--color-brand-cyan)]/30 flex items-center justify-center text-[var(--color-brand-cyan)] font-bold text-sm">
             {userName.substring(0, 2).toUpperCase()}
           </div>
@@ -722,38 +784,26 @@ const Admin = () => {
 
         <div className="flex-1 p-4 md:p-8 lg:p-10">
           
-          {/* Header de Pestaña Superior */}
+          {/* Header Superior */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
             <div>
               <h1 className="text-2xl md:text-3xl font-display font-bold text-white flex items-center gap-3">
                 {activeTab === 'works' && <Briefcase className="text-[var(--color-brand-cyan)]" size={28} />}
-                {activeTab === 'surveys' && <FileBarChart className="text-[var(--color-brand-cyan)]" size={28} />}
                 {activeTab === 'users' && <ShieldCheck className="text-purple-400" size={28} />}
                 <span>{tabLabel}</span>
               </h1>
               <p className="text-sm text-brand-secondary mt-1">
                 {activeTab === 'works' && 'Gestión de carpetas de clientes, tableros interactivos y entrega de trabajos.'}
-                {activeTab === 'surveys' && 'Acceso privado a encuestas de opinión pública, mapas y dashboards BI.'}
-                {activeTab === 'users' && 'Administración de cuentas, credenciales y asignación de permisos.'}
+                {activeTab === 'users' && 'Administración de cuentas de acceso, credenciales y asignación de permisos.'}
               </p>
             </div>
             
-            {/* Botones de acción según pestaña */}
             {activeTab === 'works' && userRole === 'administrador' && !selectedFolder && (
               <button
                 onClick={() => setShowAddFolderModal(true)}
                 className="btn-primary flex items-center gap-2 self-start sm:self-auto shadow-lg shadow-[var(--color-brand-cyan)]/15"
               >
                 <FolderPlus size={18} /> Agregar Cliente
-              </button>
-            )}
-
-            {activeTab === 'surveys' && userRole === 'administrador' && (
-              <button
-                onClick={() => setShowSurveyForm(!showSurveyForm)}
-                className="btn-primary flex items-center gap-2 self-start sm:self-auto"
-              >
-                <FolderPlus size={18} /> {showSurveyForm ? 'Cerrar Formulario' : 'Nueva Encuesta'}
               </button>
             )}
           </div>
@@ -767,7 +817,7 @@ const Admin = () => {
               {/* VISTA 1: LISTADO DE CARPETAS DE CLIENTES */}
               {!selectedFolder && (
                 <div className="flex flex-col gap-6">
-                  {/* Barra de Búsqueda y Estadísticas */}
+                  {/* Barra de Búsqueda */}
                   <div className="glass-elevated rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="relative w-full sm:w-80">
                       <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -776,7 +826,7 @@ const Admin = () => {
                         placeholder="Buscar cliente, sector o usuario..."
                         value={folderSearch}
                         onChange={(e) => setFolderSearch(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs focus:outline-none focus:border-[var(--color-brand-cyan)] transition-colors text-white"
+                        className="w-full bg-[#131B2E] border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs focus:outline-none focus:border-[var(--color-brand-cyan)] transition-colors text-white"
                       />
                     </div>
                     <div className="flex items-center gap-2 text-xs text-brand-secondary self-start sm:self-auto">
@@ -808,6 +858,8 @@ const Admin = () => {
                     ) : (
                       filteredFolders.map(folder => {
                         const worksInFolder = clientWorks.filter(w => w.clientFolderId === folder.id);
+                        const assignedList = folder.assignedUsers || [folder.assignedUser || 'todos'];
+
                         return (
                           <motion.div
                             key={folder.id}
@@ -816,13 +868,17 @@ const Admin = () => {
                             className="glass-elevated rounded-2xl p-6 flex flex-col justify-between border border-white/10 relative group hover:border-[var(--color-brand-cyan)]/50 transition-all cursor-pointer shadow-lg hover:shadow-[var(--color-brand-cyan)]/5"
                           >
                             <div>
-                              <div className="flex items-center justify-between mb-4">
-                                <div className="w-12 h-12 rounded-xl bg-[var(--color-brand-cyan)]/15 border border-[var(--color-brand-cyan)]/30 flex items-center justify-center text-[var(--color-brand-cyan)] group-hover:scale-105 transition-transform">
+                              <div className="flex items-start justify-between mb-4 gap-2">
+                                <div className="w-12 h-12 rounded-xl bg-[var(--color-brand-cyan)]/15 border border-[var(--color-brand-cyan)]/30 flex items-center justify-center text-[var(--color-brand-cyan)] group-hover:scale-105 transition-transform flex-shrink-0">
                                   <Folder size={24} />
                                 </div>
-                                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white/5 text-slate-300 border border-white/10 flex items-center gap-1.5">
-                                  <Users size={12} className="text-[var(--color-brand-cyan)]" /> @{folder.assignedUser}
-                                </span>
+                                <div className="flex flex-wrap gap-1 justify-end max-w-[200px]">
+                                  {assignedList.map(u => (
+                                    <span key={u} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/5 text-slate-300 border border-white/10 flex items-center gap-1">
+                                      <Users size={10} className="text-[var(--color-brand-cyan)]" /> @{u}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
 
                               <h3 className="text-xl font-bold text-white mb-1 group-hover:text-[var(--color-brand-cyan)] transition-colors">
@@ -868,7 +924,7 @@ const Admin = () => {
               {/* VISTA 2: DENTRO DE UNA CARPETA DE CLIENTE SELECCIONADA */}
               {selectedFolder && (
                 <div className="flex flex-col gap-6">
-                  {/* Barra Superior de Carpeta (Breadcrumbs + Botón Volver + Cargar) */}
+                  {/* Barra Superior de Carpeta */}
                   <div className="glass-elevated rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                       <button
@@ -883,25 +939,32 @@ const Admin = () => {
                         </div>
                         <div>
                           <h2 className="text-xl md:text-2xl font-bold text-white">{selectedFolder.name}</h2>
-                          <div className="flex items-center gap-2 text-xs text-brand-secondary mt-0.5">
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-brand-secondary mt-0.5">
                             <span className="text-[var(--color-brand-cyan)] font-medium">{selectedFolder.industry}</span>
                             <span>•</span>
-                            <span>Usuario asignado: <strong className="text-white">@{selectedFolder.assignedUser}</strong></span>
+                            <span>Acceso para: </span>
+                            {(selectedFolder.assignedUsers || [selectedFolder.assignedUser || 'todos']).map(u => (
+                              <span key={u} className="px-2 py-0.5 bg-white/5 rounded text-[11px] text-white font-medium border border-white/10">
+                                @{u}
+                              </span>
+                            ))}
                           </div>
                         </div>
                       </div>
                     </div>
 
                     {/* Botón Cargar Trabajo */}
-                    <button
-                      onClick={() => setShowAddWorkModal(true)}
-                      className="btn-primary flex items-center gap-2 py-3 px-5 text-sm self-start md:self-auto shadow-lg shadow-[var(--color-brand-cyan)]/20"
-                    >
-                      <Plus size={18} /> Cargar Trabajo
-                    </button>
+                    {userRole === 'administrador' && (
+                      <button
+                        onClick={() => setShowAddWorkModal(true)}
+                        className="btn-primary flex items-center gap-2 py-3 px-5 text-sm self-start md:self-auto shadow-lg shadow-[var(--color-brand-cyan)]/20"
+                      >
+                        <Plus size={18} /> Cargar Trabajo
+                      </button>
+                    )}
                   </div>
 
-                  {/* Filtros de Trabajos (Todos, Archivos, Links, GitHub) */}
+                  {/* Filtros de Trabajos */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-2 overflow-x-auto pb-1">
                       {[
@@ -918,7 +981,7 @@ const Admin = () => {
                             className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
                               workFilter === tab.id
                                 ? 'bg-[var(--color-brand-cyan)] text-black shadow-md shadow-[var(--color-brand-cyan)]/20'
-                                : 'bg-white/5 text-slate-400 hover:text-white border border-white/5'
+                                : 'bg-[#131B2E] text-slate-400 hover:text-white border border-white/5'
                             }`}
                           >
                             <Icon size={14} />
@@ -935,7 +998,7 @@ const Admin = () => {
                         placeholder="Buscar en esta carpeta..."
                         value={workSearch}
                         onChange={(e) => setWorkSearch(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-[var(--color-brand-cyan)] transition-colors"
+                        className="w-full bg-[#131B2E] border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-[var(--color-brand-cyan)] transition-colors"
                       />
                     </div>
                   </div>
@@ -947,14 +1010,18 @@ const Admin = () => {
                         <UploadCloud size={44} className="text-slate-500 stroke-1" />
                         <h4 className="text-base font-bold text-white">No hay trabajos cargados con este criterio</h4>
                         <p className="text-xs text-brand-secondary max-w-sm">
-                          Usa el botón "Cargar Trabajo" para adjuntar archivos PDF, planillas Excel, enlaces a Looker/PowerBI o repositorios de GitHub.
+                          {userRole === 'administrador'
+                            ? 'Usa el botón "Cargar Trabajo" para adjuntar archivos PDF, planillas Excel, enlaces a Looker/PowerBI o repositorios de GitHub.'
+                            : 'Aún no se han publicado trabajos en esta carpeta.'}
                         </p>
-                        <button
-                          onClick={() => setShowAddWorkModal(true)}
-                          className="btn-primary mt-2 flex items-center gap-2 text-xs"
-                        >
-                          <Plus size={16} /> Cargar Trabajo Ahora
-                        </button>
+                        {userRole === 'administrador' && (
+                          <button
+                            onClick={() => setShowAddWorkModal(true)}
+                            className="btn-primary mt-2 flex items-center gap-2 text-xs"
+                          >
+                            <Plus size={16} /> Cargar Trabajo Ahora
+                          </button>
+                        )}
                       </div>
                     ) : (
                       filteredWorks.map(work => (
@@ -1000,67 +1067,26 @@ const Admin = () => {
                             )}
                           </div>
 
-                          {/* Acciones del Trabajo */}
+                          {/* Acciones del Trabajo (Visualizar + Descargar + Eliminar) */}
                           <div className="pt-3 border-t border-white/5 flex items-center justify-between gap-2">
-                            {/* Acción según fuente */}
-                            {work.sourceType === 'file' && (
-                              <div className="flex items-center gap-2 flex-1">
-                                {work.fileData && (
-                                  <a
-                                    href={work.fileData}
-                                    download={work.fileName || 'archivo'}
-                                    className="btn-primary flex-1 py-1.5 px-3 text-xs flex items-center justify-center gap-1.5"
-                                  >
-                                    <Download size={14} /> Descargar
-                                  </a>
-                                )}
-                                {work.fileData && ['pdf', 'png', 'jpg', 'jpeg', 'txt', 'html'].includes((work.fileType || '').toLowerCase()) && (
-                                  <a
-                                    href={work.fileData}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="p-1.5 rounded-lg border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
-                                    title="Previsualizar en pestaña"
-                                  >
-                                    <Eye size={15} />
-                                  </a>
-                                )}
-                              </div>
-                            )}
+                            {/* Botón Principal: Visualizar en el Modal */}
+                            <button
+                              onClick={() => setActivePreviewWork(work)}
+                              className="btn-primary flex-1 py-1.5 px-3 text-xs flex items-center justify-center gap-1.5 shadow-sm"
+                            >
+                              <Eye size={14} /> Visualizar
+                            </button>
 
-                            {work.sourceType === 'url' && (
+                            {/* Botón Descargar (si es archivo) */}
+                            {work.sourceType === 'file' && work.fileData && (
                               <a
-                                href={work.url}
-                                target={work.url.startsWith('/') ? '_self' : '_blank'}
-                                rel="noopener noreferrer"
-                                className="btn-primary flex-1 py-1.5 px-3 text-xs flex items-center justify-center gap-1.5"
+                                href={work.fileData}
+                                download={work.fileName || 'archivo'}
+                                className="p-2 rounded-lg border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+                                title="Descargar archivo"
                               >
-                                <ExternalLink size={14} /> Abrir Tablero / Enlace
+                                <Download size={15} />
                               </a>
-                            )}
-
-                            {work.sourceType === 'github' && (
-                              <div className="flex items-center gap-2 flex-1">
-                                <a
-                                  href={`https://github.com/${work.githubRepo}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="btn-primary flex-1 py-1.5 px-3 text-xs flex items-center justify-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white"
-                                >
-                                  <FileCode size={14} /> Ver Repositorio
-                                </a>
-                                {work.githubPath && (
-                                  <a
-                                    href={`https://github.com/${work.githubRepo}/blob/${work.githubBranch || 'main'}/${work.githubPath}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="p-1.5 rounded-lg border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
-                                    title="Ver archivo fuente en GitHub"
-                                  >
-                                    <Eye size={15} />
-                                  </a>
-                                )}
-                              </div>
                             )}
 
                             {/* Botón Eliminar Trabajo (solo admin) */}
@@ -1085,134 +1111,6 @@ const Admin = () => {
           )}
 
           {/* ══════════════════════════════════════════════════════════
-              PESTAÑA: ENCUESTAS (BI / Dashboards)
-             ══════════════════════════════════════════════════════════ */}
-          {activeTab === 'surveys' && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-6">
-              
-              {/* Formulario Administrador para Agregar Encuesta */}
-              {userRole === 'administrador' && showSurveyForm && (
-                <form onSubmit={handleAddSurvey} className="glass-elevated rounded-2xl p-4 md:p-6 border border-[var(--color-brand-cyan)]/30 flex flex-col gap-4">
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <FolderPlus size={20} className="text-[var(--color-brand-cyan)]" /> Agregar Nueva Encuesta / Página
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm text-brand-secondary mb-1">Título de Encuesta</label>
-                      <input type="text" value={newSurvey.title} onChange={e => setNewSurvey({...newSurvey, title: e.target.value})} className={inputCls} placeholder="Ej: Encuesta Río Cuarto" required />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-brand-secondary mb-1">Categoría</label>
-                      <input type="text" value={newSurvey.category} onChange={e => setNewSurvey({...newSurvey, category: e.target.value})} className={inputCls} placeholder="Ej: Río Cuarto" required />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-brand-secondary mb-1">Etiqueta / Badge</label>
-                      <input type="text" value={newSurvey.badge} onChange={e => setNewSurvey({...newSurvey, badge: e.target.value})} className={inputCls} placeholder="Ej: Río Cuarto" />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="block text-sm text-brand-secondary mb-1">Enlace / Ruta Asoc.</label>
-                      <input type="text" value={newSurvey.link} onChange={e => setNewSurvey({...newSurvey, link: e.target.value})} className={inputCls} placeholder="Ej: /mapa o https://..." required />
-                    </div>
-                    <div className="sm:col-span-3">
-                      <label className="block text-sm text-brand-secondary mb-1">Descripción</label>
-                      <input type="text" value={newSurvey.description} onChange={e => setNewSurvey({...newSurvey, description: e.target.value})} className={inputCls} placeholder="Breve detalle del contenido de la encuesta..." />
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-3 mt-2">
-                    <button type="button" onClick={() => setShowSurveyForm(false)} className="px-4 py-2 rounded-xl text-sm text-brand-secondary hover:text-white bg-white/5 transition-colors">Cancelar</button>
-                    <button type="submit" className="btn-primary flex items-center gap-2"><Plus size={16} /> Crear Encuesta</button>
-                  </div>
-                </form>
-              )}
-
-              {/* Filtros de Categorías */}
-              {categories.length > 1 && (
-                <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                  <span className="text-xs uppercase text-brand-secondary font-bold mr-2 flex items-center gap-1">
-                    <Folder size={14} /> Filtros:
-                  </span>
-                  {categories.map(cat => (
-                    <button
-                      key={cat}
-                      onClick={() => setSelectedCategory(cat)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
-                        selectedCategory === cat
-                          ? 'bg-[var(--color-brand-cyan)] text-black shadow-lg shadow-[var(--color-brand-cyan)]/20'
-                          : 'bg-white/5 text-brand-secondary hover:text-white border border-white/10'
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Grid de Encuestas */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredSurveys.length === 0 ? (
-                  <div className="col-span-full glass-elevated rounded-2xl p-8 text-center text-brand-secondary">
-                    No se encontraron encuestas registradas en esta categoría.
-                  </div>
-                ) : (
-                  filteredSurveys.map(survey => (
-                    <motion.div
-                      key={survey.id}
-                      whileHover={{ y: -4 }}
-                      className="glass-elevated rounded-2xl p-6 flex flex-col justify-between border border-white/10 relative group hover:border-[var(--color-brand-cyan)]/50 transition-all"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="w-12 h-12 rounded-xl bg-[var(--color-brand-cyan)]/10 border border-[var(--color-brand-cyan)]/30 flex items-center justify-center text-[var(--color-brand-cyan)]">
-                            {survey.id === 'visita-papal-dashboard' ? <FileBarChart size={24} /> : <MapPin size={24} />}
-                          </div>
-                          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                            {survey.badge || survey.category}
-                          </span>
-                        </div>
-
-                        <h3 className="text-xl font-bold text-white mb-2">{survey.title}</h3>
-                        <p className="text-sm text-brand-secondary mb-6 leading-relaxed">
-                          {survey.description}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-3 pt-4 border-t border-white/5">
-                        {survey.isInternal ? (
-                          <Link
-                            to={survey.link}
-                            className="btn-primary flex-1 flex items-center justify-center gap-2 text-sm"
-                          >
-                            <Eye size={16} /> Ver Encuesta
-                          </Link>
-                        ) : (
-                          <a
-                            href={survey.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn-primary flex-1 flex items-center justify-center gap-2 text-sm"
-                          >
-                            <ExternalLink size={16} /> Abrir Enlace
-                          </a>
-                        )}
-
-                        {userRole === 'administrador' && !['rio-cuarto-mapa', 'visita-papal-dashboard'].includes(survey.id) && (
-                          <button
-                            onClick={() => handleDeleteSurvey(survey.id)}
-                            className="p-3 text-red-400 hover:bg-red-400/10 rounded-xl transition-colors"
-                            title="Eliminar Encuesta"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))
-                )}
-              </div>
-            </motion.div>
-          )}
-
-          {/* ══════════════════════════════════════════════════════════
               PESTAÑA: USUARIOS (Solo Administrador)
              ══════════════════════════════════════════════════════════ */}
           {activeTab === 'users' && userRole === 'administrador' && (
@@ -1222,7 +1120,7 @@ const Admin = () => {
               <form onSubmit={handleAddUser} className="glass-elevated rounded-2xl p-4 md:p-6 flex flex-col md:flex-row gap-4 items-end">
                 <div className="flex-1 min-w-[180px]">
                   <label className="block text-sm text-brand-secondary mb-2">Nombre de Usuario</label>
-                  <input type="text" value={newUser.username} onChange={e => setNewUser({...newUser, username: e.target.value})} className={inputCls} placeholder="Ej: cliente_municipio" required />
+                  <input type="text" value={newUser.username} onChange={e => setNewUser({...newUser, username: e.target.value})} className={inputCls} placeholder="Ej: cliente_muni" required />
                 </div>
                 <div className="flex-1 min-w-[180px]">
                   <label className="block text-sm text-brand-secondary mb-2">Contraseña</label>
@@ -1233,9 +1131,9 @@ const Admin = () => {
                   <select
                     value={newUser.role}
                     onChange={e => setNewUser({...newUser, role: e.target.value})}
-                    className={`${inputCls} bg-brand-surface cursor-pointer`}
+                    className={selectCls}
                   >
-                    <option value="lector">Lector (Solo Trabajos y Encuestas)</option>
+                    <option value="lector">Lector (Solo Trabajos)</option>
                     <option value="administrador">Administrador (Control Total)</option>
                   </select>
                 </div>
@@ -1252,7 +1150,7 @@ const Admin = () => {
                       <th className="pb-4 font-medium">Usuario</th>
                       <th className="pb-4 font-medium">Contraseña</th>
                       <th className="pb-4 font-medium">Rol</th>
-                      <th className="pb-4 font-medium">Carpetas Asociadas</th>
+                      <th className="pb-4 font-medium">Carpetas con Acceso</th>
                       <th className="pb-4 font-medium text-right">Acciones</th>
                     </tr>
                   </thead>
@@ -1268,7 +1166,9 @@ const Admin = () => {
                           administrador
                         </span>
                       </td>
-                      <td className="py-4 text-xs text-brand-secondary">Todas las carpetas</td>
+                      <td className="py-4 text-xs text-[var(--color-brand-cyan)] font-medium">
+                        Todas las carpetas
+                      </td>
                       <td className="py-4 text-right text-xs text-brand-secondary italic">Sistema</td>
                     </tr>
 
@@ -1280,7 +1180,10 @@ const Admin = () => {
                       </tr>
                     ) : (
                       appUsers.map(user => {
-                        const associatedFolders = clientFolders.filter(f => f.assignedUser === user.username);
+                        const associatedFolders = clientFolders.filter(f => {
+                          const list = f.assignedUsers || [f.assignedUser || ''];
+                          return list.includes(user.username);
+                        });
                         return (
                           <tr key={user.id} className="border-b border-white/5 hover:bg-white/[0.02]">
                             <td className="py-4 text-white font-medium text-sm flex items-center gap-2">
@@ -1327,7 +1230,221 @@ const Admin = () => {
       </main>
 
       {/* ══════════════════════════════════════════════════════════════
-          MODAL: AGREGAR CLIENTE / CREAR CARPETA
+          MODAL DE VISUALIZACIÓN DE TRABAJOS (IDÉNTICO A WEB-SUBSE)
+         ══════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {activePreviewWork && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-md p-2 sm:p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              className={`bg-[#0B0F17] border border-white/20 rounded-2xl flex flex-col shadow-2xl overflow-hidden transition-all duration-300 ${
+                isFullscreenPreview ? 'w-full h-full rounded-none' : 'w-full max-w-6xl h-[90vh]'
+              }`}
+            >
+              {/* Barra Superior del Visor */}
+              <div className="px-5 py-3.5 border-b border-white/10 bg-[#111827] flex items-center justify-between gap-4 flex-shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  {renderWorkIcon(activePreviewWork)}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-white text-base truncate">{activePreviewWork.title}</h3>
+                      <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-white/10 text-[var(--color-brand-cyan)] border border-white/10 flex-shrink-0">
+                        {activePreviewWork.category || 'Trabajo'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-brand-secondary truncate">
+                      {selectedFolder?.name} · {activePreviewWork.sourceType === 'file' ? activePreviewWork.fileName : (activePreviewWork.sourceType === 'github' ? activePreviewWork.githubRepo : activePreviewWork.url)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Acciones de la Barra Superior */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Botón Abrir en Nueva Pestaña */}
+                  {activePreviewWork.sourceType === 'url' && (
+                    <a
+                      href={activePreviewWork.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-semibold text-slate-200 hover:text-white hover:bg-white/10 flex items-center gap-1.5 transition-colors"
+                    >
+                      <ExternalLink size={14} /> <span className="hidden sm:inline">Abrir en Pestaña</span>
+                    </a>
+                  )}
+
+                  {activePreviewWork.sourceType === 'github' && (
+                    <a
+                      href={`https://github.com/${activePreviewWork.githubRepo}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg bg-purple-600/30 border border-purple-500/40 text-xs font-semibold text-purple-200 hover:text-white hover:bg-purple-600/50 flex items-center gap-1.5 transition-colors"
+                    >
+                      <ExternalLink size={14} /> <span className="hidden sm:inline">Ver GitHub</span>
+                    </a>
+                  )}
+
+                  {activePreviewWork.sourceType === 'file' && activePreviewWork.fileData && (
+                    <a
+                      href={activePreviewWork.fileData}
+                      download={activePreviewWork.fileName || 'archivo'}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600/30 border border-emerald-500/40 text-xs font-semibold text-emerald-200 hover:text-white hover:bg-emerald-600/50 flex items-center gap-1.5 transition-colors"
+                    >
+                      <Download size={14} /> <span className="hidden sm:inline">Descargar</span>
+                    </a>
+                  )}
+
+                  {/* Toggle Pantalla Completa */}
+                  <button
+                    onClick={() => setIsFullscreenPreview(!isFullscreenPreview)}
+                    className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                    title={isFullscreenPreview ? 'Salir de pantalla completa' : 'Pantalla completa'}
+                  >
+                    {isFullscreenPreview ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                  </button>
+
+                  {/* Cerrar Visor */}
+                  <button
+                    onClick={() => setActivePreviewWork(null)}
+                    className="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors ml-1"
+                    title="Cerrar visor"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Contenedor del Visor */}
+              <div className="flex-1 min-h-0 bg-[#070A10] relative overflow-hidden flex flex-col items-center justify-center">
+                {/* 1. Visor de URLs / Tableros Iframe */}
+                {activePreviewWork.sourceType === 'url' && (
+                  <div className="w-full h-full relative">
+                    <iframe
+                      src={activePreviewWork.url}
+                      title={activePreviewWork.title}
+                      className="w-full h-full border-0 bg-white"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      loading="lazy"
+                    />
+                    {/* Fallback de aviso por si el proveedor bloquea embedding (ej Looker o PowerBI con frame-ancestors) */}
+                    <div className="absolute bottom-2 left-2 right-2 bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 text-xs flex items-center justify-between text-slate-300">
+                      <span>¿La página no cargó en el marco integrado?</span>
+                      <a
+                        href={activePreviewWork.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[var(--color-brand-cyan)] font-bold hover:underline flex items-center gap-1"
+                      >
+                        Abrir directamente en navegador <ExternalLink size={12} />
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Visor de Archivos (PDF, TXT, Excel, etc.) */}
+                {activePreviewWork.sourceType === 'file' && (
+                  <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                    {/* PDF */}
+                    {activePreviewWork.fileType === 'pdf' ? (
+                      activePreviewWork.fileData ? (
+                        <iframe
+                          src={activePreviewWork.fileData}
+                          title={activePreviewWork.fileName}
+                          className="w-full h-full border-0 rounded-xl"
+                        />
+                      ) : (
+                        <div className="text-center p-8 glass-elevated rounded-2xl max-w-md">
+                          <FileText size={48} className="mx-auto text-rose-400 mb-3" />
+                          <h4 className="text-lg font-bold text-white mb-2">{activePreviewWork.fileName}</h4>
+                          <p className="text-xs text-slate-400 mb-4">{activePreviewWork.fileSize || 'Documento PDF'}</p>
+                          <a
+                            href={activePreviewWork.fileData}
+                            download={activePreviewWork.fileName}
+                            className="btn-primary inline-flex items-center gap-2 text-xs"
+                          >
+                            <Download size={14} /> Descargar Archivo PDF
+                          </a>
+                        </div>
+                      )
+                    ) : (
+                      /* Otros archivos (Excel, Word, CSV, ZIP) */
+                      <div className="text-center p-8 glass-elevated rounded-2xl max-w-lg border border-white/10">
+                        {renderWorkIcon(activePreviewWork)}
+                        <h4 className="text-xl font-bold text-white my-3">{activePreviewWork.fileName}</h4>
+                        <p className="text-sm text-slate-300 mb-2">{activePreviewWork.description}</p>
+                        <div className="p-3 bg-white/5 rounded-xl border border-white/10 text-xs text-slate-400 mb-6 flex justify-around">
+                          <span>Formato: <strong className="text-white">.{activePreviewWork.fileType?.toUpperCase()}</strong></span>
+                          <span>Tamaño: <strong className="text-white">{activePreviewWork.fileSize || '—'}</strong></span>
+                        </div>
+                        {activePreviewWork.fileData && (
+                          <a
+                            href={activePreviewWork.fileData}
+                            download={activePreviewWork.fileName}
+                            className="btn-primary inline-flex items-center gap-2 text-sm shadow-lg shadow-[var(--color-brand-cyan)]/15"
+                          >
+                            <Download size={16} /> Descargar Archivo para Abrir
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 3. Visor de GitHub */}
+                {activePreviewWork.sourceType === 'github' && (
+                  <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
+                    <div className="glass-elevated rounded-2xl p-8 max-w-lg border border-purple-500/30">
+                      <div className="w-16 h-16 rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400 mx-auto mb-4">
+                        <FileCode size={32} />
+                      </div>
+                      <h4 className="text-xl font-bold text-white mb-1">{activePreviewWork.title}</h4>
+                      <p className="text-xs text-purple-300 font-mono mb-4">{activePreviewWork.githubRepo}</p>
+                      <p className="text-xs text-slate-300 mb-6 leading-relaxed">{activePreviewWork.description}</p>
+
+                      <div className="p-3 bg-white/5 rounded-xl border border-white/10 text-xs text-slate-300 mb-6 flex justify-between font-mono text-left">
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">Rama:</span>
+                          <strong>{activePreviewWork.githubBranch || 'main'}</strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">Ruta:</span>
+                          <strong>{activePreviewWork.githubPath || 'index.html'}</strong>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <a
+                          href={`https://github.com/${activePreviewWork.githubRepo}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-primary py-2.5 px-4 text-xs flex items-center justify-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white"
+                        >
+                          <FileCode size={14} /> Abrir Repositorio en GitHub
+                        </a>
+                        {activePreviewWork.githubPath && (
+                          <a
+                            href={getGitHubPreviewUrl(activePreviewWork)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2.5 rounded-full border border-white/20 text-xs font-semibold text-white hover:bg-white/10 transition-colors flex items-center justify-center gap-1.5"
+                          >
+                            <ExternalLink size={14} /> Ver Archivo Fuente
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════════════════════════════════════════════════════════════
+          MODAL: AGREGAR CLIENTE / CREAR CARPETA (MULTI-USUARIO)
          ══════════════════════════════════════════════════════════════ */}
       <AnimatePresence>
         {showAddFolderModal && (
@@ -1351,7 +1468,7 @@ const Admin = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-white">Nueva Carpeta de Cliente</h3>
-                  <p className="text-xs text-brand-secondary">Asocia esta carpeta a un usuario creado en "Usuarios" para otorgarle acceso privado.</p>
+                  <p className="text-xs text-brand-secondary">Asocia esta carpeta a uno o más usuarios creados en "Usuarios" (incluyendo al Administrador).</p>
                 </div>
               </div>
 
@@ -1365,30 +1482,82 @@ const Admin = () => {
                     value={newFolder.name}
                     onChange={(e) => setNewFolder({ ...newFolder, name: e.target.value })}
                     className={inputCls}
-                    placeholder="Ej: Municipalidad de Río Cuarto"
+                    placeholder="Ej: CONSULTIO o Municipalidad de Río Cuarto"
                     required
                   />
                 </div>
 
+                {/* Selección Múltiple de Usuarios Asociados */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Usuario Asociado (con acceso exclusivo) <span className="text-rose-400">*</span>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Usuarios con Acceso a esta Carpeta (Selección Múltiple) <span className="text-rose-400">*</span>
                   </label>
-                  <select
-                    value={newFolder.assignedUser}
-                    onChange={(e) => setNewFolder({ ...newFolder, assignedUser: e.target.value })}
-                    className={`${inputCls} bg-brand-surface cursor-pointer`}
-                  >
-                    <option value="todos">Todos los usuarios (Acceso compartido)</option>
-                    <option value="lector">lector (Usuario lector de demostración)</option>
+                  
+                  {/* Selector chips multi-usuario */}
+                  <div className="p-3 rounded-xl bg-[#131B2E] border border-white/10 flex flex-col gap-2 max-h-48 overflow-y-auto">
+                    {/* Opción 1: Super-Admin grupoconsultio */}
+                    <label
+                      onClick={() => toggleUserInFolder('grupoconsultio')}
+                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${
+                        newFolder.assignedUsers.includes('grupoconsultio')
+                          ? 'bg-[var(--color-brand-cyan)]/15 border border-[var(--color-brand-cyan)]/40 text-white font-semibold'
+                          : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 text-xs">
+                        <ShieldCheck size={14} className="text-purple-400" />
+                        <span>@grupoconsultio (Administrador / Dueño)</span>
+                      </span>
+                      {newFolder.assignedUsers.includes('grupoconsultio') && (
+                        <Check size={14} className="text-[var(--color-brand-cyan)]" />
+                      )}
+                    </label>
+
+                    {/* Opción 2: Todos los usuarios */}
+                    <label
+                      onClick={() => toggleUserInFolder('todos')}
+                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${
+                        newFolder.assignedUsers.includes('todos')
+                          ? 'bg-purple-500/20 border border-purple-500/40 text-purple-200 font-semibold'
+                          : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 text-xs">
+                        <Globe size={14} className="text-purple-400" />
+                        <span>Todos los usuarios (Acceso general / Público)</span>
+                      </span>
+                      {newFolder.assignedUsers.includes('todos') && (
+                        <Check size={14} className="text-purple-400" />
+                      )}
+                    </label>
+
+                    {/* Lista de usuarios registrados de appUsers */}
                     {appUsers.map(u => (
-                      <option key={u.id} value={u.username}>
-                        @{u.username} ({u.role})
-                      </option>
+                      <label
+                        key={u.id}
+                        onClick={() => toggleUserInFolder(u.username)}
+                        className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${
+                          newFolder.assignedUsers.includes(u.username)
+                            ? 'bg-[var(--color-brand-cyan)]/15 border border-[var(--color-brand-cyan)]/40 text-white font-semibold'
+                            : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2 text-xs">
+                          <Users size={14} className="text-[var(--color-brand-cyan)]" />
+                          <span>@{u.username} <span className="text-[10px] text-slate-400 font-normal">({u.role})</span></span>
+                        </span>
+                        {newFolder.assignedUsers.includes(u.username) && (
+                          <Check size={14} className="text-[var(--color-brand-cyan)]" />
+                        )}
+                      </label>
                     ))}
-                  </select>
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    Solo este usuario (y administradores) podrán ver esta carpeta al iniciar sesión.
+                  </div>
+
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Usuarios seleccionados ({newFolder.assignedUsers.length}):{' '}
+                    <strong className="text-[var(--color-brand-cyan)]">
+                      {newFolder.assignedUsers.map(u => `@${u}`).join(', ')}
+                    </strong>
                   </p>
                 </div>
 
@@ -1410,11 +1579,11 @@ const Admin = () => {
                     Descripción / Notas
                   </label>
                   <textarea
-                    rows={3}
+                    rows={2}
                     value={newFolder.description}
                     onChange={(e) => setNewFolder({ ...newFolder, description: e.target.value })}
                     className={inputCls}
-                    placeholder="Detalles sobre el proyecto, alcance o notas para el cliente..."
+                    placeholder="Detalles sobre el proyecto o alcance de la carpeta..."
                   />
                 </div>
 
@@ -1437,7 +1606,7 @@ const Admin = () => {
       </AnimatePresence>
 
       {/* ══════════════════════════════════════════════════════════════
-          MODAL: CARGAR TRABAJO (ENLACE, ARCHIVO, GITHUB)
+          MODAL: CARGAR TRABAJO (ENLACE, ARCHIVO, GITHUB CON BOTÓN)
          ══════════════════════════════════════════════════════════════ */}
       <AnimatePresence>
         {showAddWorkModal && selectedFolder && (
@@ -1462,13 +1631,13 @@ const Admin = () => {
                 <div>
                   <h3 className="text-lg font-bold text-white">Cargar Trabajo</h3>
                   <p className="text-xs text-brand-secondary">
-                    Carpeta: <strong className="text-white">{selectedFolder.name}</strong> (@{selectedFolder.assignedUser})
+                    Carpeta: <strong className="text-white">{selectedFolder.name}</strong>
                   </p>
                 </div>
               </div>
 
               <form onSubmit={handleCreateWork} className="flex flex-col gap-4">
-                {/* 1. Título y Categoría */}
+                {/* Título y Categoría */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-semibold text-slate-300 mb-1">
@@ -1502,23 +1671,23 @@ const Admin = () => {
                     value={newWork.description}
                     onChange={(e) => setNewWork({ ...newWork, description: e.target.value })}
                     className={inputCls}
-                    placeholder="Breve resumen del contenido o entregable..."
+                    placeholder="Breve resumen del entregable..."
                   />
                 </div>
 
-                {/* 2. Selector de Tipo de Fuente (Enlace, Archivo, GitHub) */}
+                {/* Selector visual de Tipo de Fuente */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-2">
                     Tipo de Fuente / Origen del Trabajo <span className="text-rose-400">*</span>
                   </label>
                   <div className="grid grid-cols-3 gap-2.5">
-                    {/* Opción 1: Enlace Web */}
+                    {/* Enlace Web */}
                     <label
                       onClick={() => setNewWork({ ...newWork, sourceType: 'url' })}
                       className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${
                         newWork.sourceType === 'url'
                           ? 'bg-[var(--color-brand-cyan)]/15 border-[var(--color-brand-cyan)] shadow-md shadow-[var(--color-brand-cyan)]/10 text-white'
-                          : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20 hover:bg-white/10'
+                          : 'bg-[#131B2E] border-white/10 text-slate-400 hover:border-white/20 hover:bg-white/5'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
@@ -1528,13 +1697,13 @@ const Admin = () => {
                       <span className="text-[10px] text-slate-400">PowerBI, Looker, URL</span>
                     </label>
 
-                    {/* Opción 2: Subir Archivo */}
+                    {/* Subir Archivo */}
                     <label
                       onClick={() => setNewWork({ ...newWork, sourceType: 'file' })}
                       className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${
                         newWork.sourceType === 'file'
                           ? 'bg-[var(--color-brand-cyan)]/15 border-[var(--color-brand-cyan)] shadow-md shadow-[var(--color-brand-cyan)]/10 text-white'
-                          : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20 hover:bg-white/10'
+                          : 'bg-[#131B2E] border-white/10 text-slate-400 hover:border-white/20 hover:bg-white/5'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
@@ -1544,13 +1713,13 @@ const Admin = () => {
                       <span className="text-[10px] text-slate-400">PDF, Excel, TXT, ZIP</span>
                     </label>
 
-                    {/* Opción 3: GitHub */}
+                    {/* GitHub */}
                     <label
                       onClick={() => setNewWork({ ...newWork, sourceType: 'github' })}
                       className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${
                         newWork.sourceType === 'github'
                           ? 'bg-purple-500/15 border-purple-400 shadow-md shadow-purple-500/10 text-white'
-                          : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20 hover:bg-white/10'
+                          : 'bg-[#131B2E] border-white/10 text-slate-400 hover:border-white/20 hover:bg-white/5'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
@@ -1562,31 +1731,29 @@ const Admin = () => {
                   </div>
                 </div>
 
-                {/* 3. Campos dinámicos según el tipo de fuente */}
-                
                 {/* ── TIPO URL ── */}
                 {newWork.sourceType === 'url' && (
-                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex flex-col gap-2">
+                  <div className="p-4 rounded-xl bg-[#131B2E] border border-white/10 flex flex-col gap-2">
                     <label className="block text-xs font-semibold text-slate-300">
                       URL del Enlace o Iframe <span className="text-rose-400">*</span>
                     </label>
                     <input
-                      type="url"
+                      type="text"
                       value={newWork.url}
                       onChange={(e) => setNewWork({ ...newWork, url: e.target.value })}
                       className={inputCls}
-                      placeholder="https://lookerstudio.google.com/... o https://app.powerbi.com/..."
+                      placeholder="https://lookerstudio.google.com/... o /mapa o /admin/encuesta-papa"
                       required={newWork.sourceType === 'url'}
                     />
                     <p className="text-[11px] text-slate-400">
-                      Pega aquí el enlace de Looker Studio, PowerBI, Google Sheets o cualquier dashboard externo.
+                      Pega aquí enlaces externos (Looker Studio, PowerBI, Google Sheets) o rutas internas (/mapa, /admin/encuesta-papa).
                     </p>
                   </div>
                 )}
 
-                {/* ── TIPO ARCHIVO (PDF, TXT, EXCEL, ZIP) ── */}
+                {/* ── TIPO ARCHIVO ── */}
                 {newWork.sourceType === 'file' && (
-                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex flex-col gap-3">
+                  <div className="p-4 rounded-xl bg-[#131B2E] border border-white/10 flex flex-col gap-3">
                     <label className="block text-xs font-semibold text-slate-300">
                       Archivo del Trabajo (PDF, Excel, TXT, CSV, ZIP, HTML) <span className="text-rose-400">*</span>
                     </label>
@@ -1619,49 +1786,136 @@ const Admin = () => {
                   </div>
                 )}
 
-                {/* ── TIPO GITHUB ── */}
+                {/* ── TIPO GITHUB (CONEXIÓN Y SELECTORES IDÉNTICOS A WEB-SUBSE) ── */}
                 {newWork.sourceType === 'github' && (
-                  <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 flex flex-col gap-3">
-                    <span className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
-                      <FileCode size={16} /> Configuración de Repositorio GitHub
-                    </span>
+                  <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 flex flex-col gap-3.5">
+                    {/* Header y Botón Conectar */}
+                    <div className="flex items-center justify-between pb-2 border-b border-purple-500/20">
+                      <span className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
+                        <FileCode size={16} /> Repositorio GitHub
+                      </span>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">
-                        Repositorio (owner/repo o URL completa) <span className="text-rose-400">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={newWork.githubRepo}
-                        onChange={(e) => setNewWork({ ...newWork, githubRepo: e.target.value.replace(/^https?:\/\/github\.com\//, '') })}
-                        className={inputCls}
-                        placeholder="Ej: grupoconsultio/tablero-satisfaccion"
-                        required={newWork.sourceType === 'github'}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
+                      {/* Estado de Conexión */}
                       <div>
-                        <label className="block text-xs font-semibold text-slate-300 mb-1">Rama (Branch)</label>
-                        <input
-                          type="text"
-                          value={newWork.githubBranch}
-                          onChange={(e) => setNewWork({ ...newWork, githubBranch: e.target.value })}
-                          className={inputCls}
-                          placeholder="main"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-300 mb-1">Ruta del archivo</label>
-                        <input
-                          type="text"
-                          value={newWork.githubPath}
-                          onChange={(e) => setNewWork({ ...newWork, githubPath: e.target.value })}
-                          className={inputCls}
-                          placeholder="index.html"
-                        />
+                        {githubToken && githubUser ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-emerald-400 font-bold flex items-center gap-1.5 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/30 text-xs">
+                              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                              @{githubUser}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleDisconnectGitHub}
+                              className="text-xs text-rose-400 hover:underline font-medium"
+                            >
+                              Desconectar
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setShowGithubConnectModal(true)}
+                            className="px-3 py-1.5 bg-slate-900 hover:bg-black text-white font-bold rounded-lg transition text-xs flex items-center gap-1.5 shadow-sm border border-white/20"
+                          >
+                            <FileCode size={13} /> Conectar con GitHub
+                          </button>
+                        )}
                       </div>
                     </div>
+
+                    {/* Si está conectado: Controles dinámicos de Repositorio y Ramas */}
+                    {githubToken && githubUser ? (
+                      <div className="flex flex-col gap-3">
+                        {/* Selector de Repositorios */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-xs font-medium text-slate-300">
+                              Seleccionar Repositorio <span className="text-rose-400">*</span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => loadGitHubRepos(githubToken)}
+                              disabled={isLoadingRepos}
+                              className="text-[11px] text-[var(--color-brand-cyan)] hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                            >
+                              <RefreshCw size={11} className={isLoadingRepos ? 'animate-spin' : ''} />
+                              Recargar lista
+                            </button>
+                          </div>
+
+                          <select
+                            value={newWork.githubRepo}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setNewWork(prev => ({ ...prev, githubRepo: val }));
+                              loadGitHubBranches(githubToken, val);
+                            }}
+                            className={selectCls}
+                            required={newWork.sourceType === 'github'}
+                          >
+                            {isLoadingRepos ? (
+                              <option value="">Cargando repositorios de GitHub...</option>
+                            ) : githubRepos.length === 0 ? (
+                              <option value="">No se encontraron repositorios</option>
+                            ) : (
+                              githubRepos.map(r => (
+                                <option key={r.id} value={r.full_name}>
+                                  {r.full_name} {r.private ? '🔒' : '🌐'}
+                                </option>
+                              ))
+                            )}
+                          </select>
+                        </div>
+
+                        {/* Rama y Ruta del archivo */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-slate-300 mb-1">
+                              Rama (Branch)
+                            </label>
+                            <select
+                              value={newWork.githubBranch}
+                              onChange={(e) => setNewWork(prev => ({ ...prev, githubBranch: e.target.value }))}
+                              className={selectCls}
+                            >
+                              {isLoadingBranches ? (
+                                <option value="main">Cargando ramas...</option>
+                              ) : (
+                                githubBranches.map(b => (
+                                  <option key={b} value={b}>{b}</option>
+                                ))
+                              )}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-300 mb-1">
+                              Ruta del archivo
+                            </label>
+                            <input
+                              type="text"
+                              value={newWork.githubPath}
+                              onChange={(e) => setNewWork(prev => ({ ...prev, githubPath: e.target.value }))}
+                              className={inputCls}
+                              placeholder="index.html"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Si aún no conectó con GitHub */
+                      <div className="p-4 rounded-xl bg-purple-900/20 border border-purple-500/20 text-center flex flex-col items-center gap-2">
+                        <p className="text-xs text-purple-200">
+                          Haz clic en <strong>"Conectar con GitHub"</strong> para seleccionar directamente tus repositorios y ramas disponibles.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setShowGithubConnectModal(true)}
+                          className="btn-primary py-1.5 px-4 text-xs flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white"
+                        >
+                          <FileCode size={14} /> Conectar Cuenta de GitHub
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1684,6 +1938,81 @@ const Admin = () => {
                     ) : (
                       <><Plus size={16} /> Guardar y Cargar Trabajo</>
                     )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════════════════════════════════════════════════════════════
+          MODAL: CONECTAR TOKEN DE GITHUB (POPUP IDÉNTICO AL EJEMPLO)
+         ══════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {showGithubConnectModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-[#0F172A] border border-purple-500/40 rounded-2xl p-6 shadow-2xl relative"
+            >
+              <button
+                onClick={() => setShowGithubConnectModal(false)}
+                className="absolute top-5 right-5 text-slate-400 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400">
+                  <FileCode size={22} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Conectar con GitHub</h3>
+                  <p className="text-xs text-purple-300">Vinculación de cuenta para explorar repositorios y ramas.</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleConnectGitHub} className="flex flex-col gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    GitHub Personal Access Token (PAT) <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={tokenInput}
+                    onChange={(e) => setTokenInput(e.target.value)}
+                    className={inputCls}
+                    placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    required
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Permite leer tus repositorios públicos y privados con seguridad sin salir del administrador.
+                  </p>
+                </div>
+
+                {tokenError && (
+                  <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+                    <AlertCircle size={15} />
+                    <span>{tokenError}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setShowGithubConnectModal(false)}
+                    className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white bg-white/5"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary py-2 px-5 text-xs flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white"
+                  >
+                    <Check size={14} /> Conectar Cuenta
                   </button>
                 </div>
               </form>
