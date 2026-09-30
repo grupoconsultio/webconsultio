@@ -1489,7 +1489,7 @@ const Admin = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
               className={`bg-[#0B0F17] border border-white/20 rounded-2xl flex flex-col shadow-2xl overflow-hidden transition-all duration-300 ${
-                isFullscreenPreview ? 'w-full h-full rounded-none' : 'w-full max-w-6xl h-[90vh]'
+                isFullscreenPreview ? 'w-full h-full rounded-none' : 'w-full max-w-7xl h-[92vh]'
               }`}
             >
               {/* Barra Superior del Visor */}
@@ -1562,6 +1562,8 @@ const Admin = () => {
                       src={getWorkDeployUrl(activePreviewWork)}
                       title={activePreviewWork.title}
                       className="w-full h-full border-0 bg-[#0B0F17]"
+                      scrolling="yes"
+                      style={{ width: '100%', height: '100%', minHeight: '100%' }}
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                       allowFullScreen
                       loading="lazy"
@@ -1582,16 +1584,18 @@ const Admin = () => {
                   </div>
                 )}
 
-                {/* 2. Visor de Archivos (PDF, TXT, Excel, etc.) */}
+                {/* 2. Visor de Archivos (PDF, HTML, TXT, Excel, etc.) */}
                 {activePreviewWork.sourceType === 'file' && (
                   <div className="w-full h-full flex flex-col items-center justify-center p-4">
-                    {/* PDF */}
-                    {activePreviewWork.fileType === 'pdf' ? (
+                    {/* PDF o HTML interactivo cargado como archivo */}
+                    {activePreviewWork.fileType === 'pdf' || activePreviewWork.fileType === 'html' || activePreviewWork.fileType === 'htm' ? (
                       activePreviewWork.fileData ? (
                         <iframe
                           src={activePreviewWork.fileData}
                           title={activePreviewWork.fileName}
                           className="w-full h-full border-0 rounded-xl"
+                          scrolling="yes"
+                          style={{ width: '100%', height: '100%' }}
                         />
                       ) : (
                         <div className="text-center p-8 glass-elevated rounded-2xl max-w-md">

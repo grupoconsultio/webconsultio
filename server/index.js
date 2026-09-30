@@ -591,13 +591,32 @@ app.get('/api/github/proxy/:owner/:repo/:branch/*', async (req, res) => {
       const pathDir = filePath.includes('/') ? filePath.substring(0, filePath.lastIndexOf('/') + 1) : '';
       const safePathDir = pathDir ? pathDir.split('/').map(encodeURIComponent).join('/') : '';
       const baseTag = `<base href="/api/github/proxy/${encodeURIComponent(owner)}/${encodeURIComponent(cleanRepo)}/${encodeURIComponent(branch)}/${safePathDir}${tokenQuery}">`;
+      const scrollFixTag = `<style id="consuldat-scroll-fix">
+        html, body {
+          overflow-y: auto !important;
+          overflow-x: hidden !important;
+          height: auto !important;
+          min-height: 100% !important;
+        }
+        .mapwrap {
+          min-height: 480px !important;
+        }
+        .shell {
+          min-height: min-content !important;
+        }
+        main {
+          overflow-y: visible !important;
+          min-height: min-content !important;
+        }
+      </style>`;
+      const injection = `${baseTag}\n  ${scrollFixTag}`;
       
       if (htmlText.includes('<head>')) {
-        htmlText = htmlText.replace('<head>', `<head>\n  ${baseTag}`);
+        htmlText = htmlText.replace('<head>', `<head>\n  ${injection}`);
       } else if (htmlText.includes('<HEAD>')) {
-        htmlText = htmlText.replace('<HEAD>', `<HEAD>\n  ${baseTag}`);
+        htmlText = htmlText.replace('<HEAD>', `<HEAD>\n  ${injection}`);
       } else {
-        htmlText = baseTag + htmlText;
+        htmlText = injection + htmlText;
       }
       return res.send(htmlText);
     }
