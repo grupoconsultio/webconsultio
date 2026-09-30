@@ -521,6 +521,90 @@ app.get('/api/survey/export/raffle', async (req, res) => {
     console.error('Error exporting raffle:', error);
     res.status(500).json({ success: false, error: error.message });
   }
+// 7. Proxy de Despliegue Directo de GitHub para Tableros Interactivos
+app.get('/api/github/proxy/:owner/:repo/:branch/*', async (req, res) => {
+  const { owner, repo, branch } = req.params;
+  let filePath = req.params[0] || 'index.html';
+
+  if (filePath.startsWith('/')) filePath = filePath.substring(1);
+  if (!filePath) filePath = 'index.html';
+
+  const token = req.query.token ||
+    (req.headers.authorization ? req.headers.authorization.replace('Bearer ', '') : null) ||
+    process.env.GITHUB_TOKEN ||
+    process.env.VITE_GITHUB_TOKEN ||
+    '';
+
+  const cleanRepo = repo.replace(/\.git$/i, '');
+
+  const headers = {
+    'User-Agent': 'ConsulDat-App',
+    'Accept': 'application/vnd.github.v3.raw'
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  try {
+    const safePath = filePath.split('/').map(encodeURIComponent).join('/');
+    const ghUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(cleanRepo)}/contents/${safePath}?ref=${encodeURIComponent(branch)}`;
+    const ghRes = await fetch(ghUrl, { headers });
+
+    if (!ghRes.ok) {
+      return res.status(ghRes.status).send(`
+        <div style="font-family: system-ui, sans-serif; padding: 40px; text-align: center; color: #f43f5e; background: #0f172a; border-radius: 12px; margin: 20px;">
+          <h3 style="margin-top:0;">No se pudo cargar el tablero (${ghRes.status})</h3>
+          <p style="color: #94a3b8;">Archivo: <code>${filePath}</code></p>
+        </div>
+      `);
+    }
+
+    const ext = filePath.split('.').pop().toLowerCase();
+    const mimeTypes = {
+      'html': 'text/html; charset=utf-8',
+      'htm': 'text/html; charset=utf-8',
+      'css': 'text/css; charset=utf-8',
+      'js': 'application/javascript; charset=utf-8',
+      'mjs': 'application/javascript; charset=utf-8',
+      'json': 'application/json; charset=utf-8',
+      'png': 'image/png',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'gif': 'image/gif',
+      'svg': 'image/svg+xml',
+      'webp': 'image/webp',
+      'ico': 'image/x-icon',
+      'woff': 'font/woff',
+      'woff2': 'font/woff2',
+      'ttf': 'font/ttf'
+    };
+
+    const contentType = mimeTypes[ext] || ghRes.headers.get('content-type') || 'text/plain';
+    res.setHeader('Content-Type', contentType);
+
+    if (ext === 'html' || ext === 'htm') {
+      let htmlText = await ghRes.text();
+      const tokenQuery = token ? `?token=${encodeURIComponent(token)}` : '';
+      const pathDir = filePath.includes('/') ? filePath.substring(0, filePath.lastIndexOf('/') + 1) : '';
+      const safePathDir = pathDir ? pathDir.split('/').map(encodeURIComponent).join('/') : '';
+      const baseTag = `<base href="/api/github/proxy/${encodeURIComponent(owner)}/${encodeURIComponent(cleanRepo)}/${encodeURIComponent(branch)}/${safePathDir}${tokenQuery}">`;
+      
+      if (htmlText.includes('<head>')) {
+        htmlText = htmlText.replace('<head>', `<head>\n  ${baseTag}`);
+      } else if (htmlText.includes('<HEAD>')) {
+        htmlText = htmlText.replace('<HEAD>', `<HEAD>\n  ${baseTag}`);
+      } else {
+        htmlText = baseTag + htmlText;
+      }
+      return res.send(htmlText);
+    }
+
+    const buffer = await ghRes.arrayBuffer();
+    return res.send(Buffer.from(buffer));
+  } catch (err) {
+    console.error("Error en proxy de GitHub:", err);
+    res.status(500).send("Error interno cargando tablero: " + err.message);
+  }
 });
 
 // Servir archivos estáticos del frontend si existe la carpeta dist

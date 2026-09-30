@@ -665,11 +665,12 @@ const Admin = () => {
   const tabLabel = navItems.find(n => n.key === activeTab)?.label ?? 'Trabajos';
 
   // Renderizar icono por tipo de trabajo
+  // Renderizar icono por tipo de trabajo
   const renderWorkIcon = (work) => {
     if (work.sourceType === 'github') {
       return (
-        <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
-          <FileCode size={20} />
+        <div className="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+          <Sparkles size={20} />
         </div>
       );
     }
@@ -702,10 +703,31 @@ const Admin = () => {
     );
   };
 
-  // Helper para generar URL de visualización de GitHub
-  const getGitHubPreviewUrl = (work) => {
-    if (!work.githubRepo) return '';
-    return `https://github.com/${work.githubRepo}/blob/${work.githubBranch || 'main'}/${work.githubPath || 'index.html'}`;
+  // Helper para generar URL de visualización desplegada en servidor para tableros
+  const getWorkDeployUrl = (work) => {
+    if (!work) return '';
+    if (work.sourceType === 'url') return work.url;
+    if (work.sourceType === 'github') {
+      const rawRepo = (work.githubRepo || '').trim();
+      const cleanRepo = rawRepo
+        .replace(/^https?:\/\/github\.com\//i, '')
+        .replace(/^git@github\.com:/i, '')
+        .replace(/\.git$/i, '');
+      const parts = cleanRepo.split('/').filter(Boolean);
+      const owner = parts[0] || 'grupoconsultio';
+      const repo = parts[1] || '';
+      const branch = (work.githubBranch || 'main').trim();
+      const filePath = (work.githubPath || 'index.html').trim();
+      
+      const savedToken = typeof localStorage !== 'undefined'
+        ? (localStorage.getItem('github_token') || sessionStorage.getItem('github_token') || '')
+        : '';
+      const tokenQuery = savedToken ? `?token=${encodeURIComponent(savedToken)}` : '';
+      
+      const safePath = filePath.split('/').map(segment => encodeURIComponent(segment)).join('/');
+      return `/api/github/proxy/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${encodeURIComponent(branch)}/${safePath}${tokenQuery}`;
+    }
+    return '';
   };
 
   return (
@@ -971,7 +993,7 @@ const Admin = () => {
                         { id: 'todos', label: 'Todos los Trabajos', icon: Layers },
                         { id: 'file', label: 'Archivos (PDF/Excel/TXT)', icon: FileText },
                         { id: 'url', label: 'Enlaces Web / Tableros', icon: Globe },
-                        { id: 'github', label: 'GitHub', icon: FileCode }
+                        { id: 'github', label: 'Tableros Desplegados', icon: Sparkles }
                       ].map(tab => {
                         const Icon = tab.icon;
                         return (
@@ -1034,7 +1056,7 @@ const Admin = () => {
                             <div className="flex items-center justify-between mb-3">
                               {renderWorkIcon(work)}
                               <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-300 font-medium">
-                                {work.sourceType === 'file' ? (work.fileType ? work.fileType.toUpperCase() : 'ARCHIVO') : (work.sourceType === 'github' ? 'GITHUB' : 'ENLACE WEB')}
+                                {work.sourceType === 'file' ? (work.fileType ? work.fileType.toUpperCase() : 'ARCHIVO') : (work.sourceType === 'github' ? 'TABLERO INTERACTIVO' : 'ENLACE WEB')}
                               </span>
                             </div>
 
@@ -1054,9 +1076,12 @@ const Admin = () => {
                             )}
 
                             {work.sourceType === 'github' && (
-                              <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-[11px] text-purple-300 flex items-center justify-between mb-4">
-                                <span className="truncate max-w-[150px] font-mono">{work.githubRepo}</span>
-                                <span className="px-1.5 py-0.5 bg-purple-500/20 rounded text-[10px]">{work.githubBranch || 'main'}</span>
+                              <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-[11px] text-cyan-300 flex items-center justify-between mb-4">
+                                <span className="flex items-center gap-1.5 font-medium">
+                                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                  Tablero Desplegado en Servidor
+                                </span>
+                                <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-200 rounded text-[10px] font-semibold">EN LÍNEA</span>
                               </div>
                             )}
 
@@ -1251,37 +1276,26 @@ const Admin = () => {
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-white text-base truncate">{activePreviewWork.title}</h3>
                       <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-white/10 text-[var(--color-brand-cyan)] border border-white/10 flex-shrink-0">
-                        {activePreviewWork.category || 'Trabajo'}
+                        {activePreviewWork.category || (activePreviewWork.sourceType === 'github' ? 'Tablero Interactivo' : 'Trabajo')}
                       </span>
                     </div>
                     <p className="text-xs text-brand-secondary truncate">
-                      {selectedFolder?.name} · {activePreviewWork.sourceType === 'file' ? activePreviewWork.fileName : (activePreviewWork.sourceType === 'github' ? activePreviewWork.githubRepo : activePreviewWork.url)}
+                      {selectedFolder?.name} · {activePreviewWork.sourceType === 'file' ? activePreviewWork.fileName : (activePreviewWork.sourceType === 'github' ? 'Visualización en vivo' : activePreviewWork.url)}
                     </p>
                   </div>
                 </div>
 
                 {/* Acciones de la Barra Superior */}
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {/* Botón Abrir en Nueva Pestaña */}
-                  {activePreviewWork.sourceType === 'url' && (
+                  {/* Botón Abrir en Nueva Pestaña (URLs y Tableros desplegados en servidor) */}
+                  {(activePreviewWork.sourceType === 'url' || activePreviewWork.sourceType === 'github') && (
                     <a
-                      href={activePreviewWork.url}
+                      href={getWorkDeployUrl(activePreviewWork)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-semibold text-slate-200 hover:text-white hover:bg-white/10 flex items-center gap-1.5 transition-colors"
                     >
                       <ExternalLink size={14} /> <span className="hidden sm:inline">Abrir en Pestaña</span>
-                    </a>
-                  )}
-
-                  {activePreviewWork.sourceType === 'github' && (
-                    <a
-                      href={`https://github.com/${activePreviewWork.githubRepo}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 rounded-lg bg-purple-600/30 border border-purple-500/40 text-xs font-semibold text-purple-200 hover:text-white hover:bg-purple-600/50 flex items-center gap-1.5 transition-colors"
-                    >
-                      <ExternalLink size={14} /> <span className="hidden sm:inline">Ver GitHub</span>
                     </a>
                   )}
 
@@ -1317,29 +1331,30 @@ const Admin = () => {
 
               {/* Contenedor del Visor */}
               <div className="flex-1 min-h-0 bg-[#070A10] relative overflow-hidden flex flex-col items-center justify-center">
-                {/* 1. Visor de URLs / Tableros Iframe */}
-                {activePreviewWork.sourceType === 'url' && (
-                  <div className="w-full h-full relative">
+                {/* 1. Visor de Tableros Interactivos (URLs o Despliegues de GitHub en el Servidor) */}
+                {(activePreviewWork.sourceType === 'url' || activePreviewWork.sourceType === 'github') && (
+                  <div className="w-full h-full relative flex flex-col bg-[#070A10]">
                     <iframe
-                      src={activePreviewWork.url}
+                      src={getWorkDeployUrl(activePreviewWork)}
                       title={activePreviewWork.title}
-                      className="w-full h-full border-0 bg-white"
+                      className="w-full h-full border-0 bg-[#0B0F17]"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                       allowFullScreen
                       loading="lazy"
                     />
-                    {/* Fallback de aviso por si el proveedor bloquea embedding (ej Looker o PowerBI con frame-ancestors) */}
-                    <div className="absolute bottom-2 left-2 right-2 bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 text-xs flex items-center justify-between text-slate-300">
-                      <span>¿La página no cargó en el marco integrado?</span>
-                      <a
-                        href={activePreviewWork.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[var(--color-brand-cyan)] font-bold hover:underline flex items-center gap-1"
-                      >
-                        Abrir directamente en navegador <ExternalLink size={12} />
-                      </a>
-                    </div>
+                    {activePreviewWork.sourceType === 'url' && (
+                      <div className="absolute bottom-2 left-2 right-2 bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 text-xs flex items-center justify-between text-slate-300">
+                        <span>¿La página no cargó en el marco integrado?</span>
+                        <a
+                          href={activePreviewWork.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[var(--color-brand-cyan)] font-bold hover:underline flex items-center gap-1"
+                        >
+                          Abrir directamente en navegador <ExternalLink size={12} />
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1389,52 +1404,6 @@ const Admin = () => {
                         )}
                       </div>
                     )}
-                  </div>
-                )}
-
-                {/* 3. Visor de GitHub */}
-                {activePreviewWork.sourceType === 'github' && (
-                  <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
-                    <div className="glass-elevated rounded-2xl p-8 max-w-lg border border-purple-500/30">
-                      <div className="w-16 h-16 rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400 mx-auto mb-4">
-                        <FileCode size={32} />
-                      </div>
-                      <h4 className="text-xl font-bold text-white mb-1">{activePreviewWork.title}</h4>
-                      <p className="text-xs text-purple-300 font-mono mb-4">{activePreviewWork.githubRepo}</p>
-                      <p className="text-xs text-slate-300 mb-6 leading-relaxed">{activePreviewWork.description}</p>
-
-                      <div className="p-3 bg-white/5 rounded-xl border border-white/10 text-xs text-slate-300 mb-6 flex justify-between font-mono text-left">
-                        <div>
-                          <span className="text-slate-500 block text-[10px]">Rama:</span>
-                          <strong>{activePreviewWork.githubBranch || 'main'}</strong>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block text-[10px]">Ruta:</span>
-                          <strong>{activePreviewWork.githubPath || 'index.html'}</strong>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                        <a
-                          href={`https://github.com/${activePreviewWork.githubRepo}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn-primary py-2.5 px-4 text-xs flex items-center justify-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white"
-                        >
-                          <FileCode size={14} /> Abrir Repositorio en GitHub
-                        </a>
-                        {activePreviewWork.githubPath && (
-                          <a
-                            href={getGitHubPreviewUrl(activePreviewWork)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-4 py-2.5 rounded-full border border-white/20 text-xs font-semibold text-white hover:bg-white/10 transition-colors flex items-center justify-center gap-1.5"
-                          >
-                            <ExternalLink size={14} /> Ver Archivo Fuente
-                          </a>
-                        )}
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>
