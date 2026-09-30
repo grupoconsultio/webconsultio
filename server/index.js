@@ -593,20 +593,54 @@ app.get('/api/github/proxy/:owner/:repo/:branch/*', async (req, res) => {
       const baseTag = `<base href="/api/github/proxy/${encodeURIComponent(owner)}/${encodeURIComponent(cleanRepo)}/${encodeURIComponent(branch)}/${safePathDir}${tokenQuery}">`;
       const scrollFixTag = `<style id="consuldat-scroll-fix">
         html, body {
-          overflow-y: auto !important;
-          overflow-x: hidden !important;
-          height: auto !important;
-          min-height: 100% !important;
+          height: 100% !important;
+          margin: 0 !important;
+          overflow: hidden !important;
         }
-        .mapwrap {
-          min-height: 480px !important;
+        body {
+          display: flex !important;
+          flex-direction: column !important;
+        }
+        header {
+          flex-shrink: 0 !important;
         }
         .shell {
-          min-height: min-content !important;
+          flex: 1 1 auto !important;
+          min-height: 0 !important;
+          display: flex !important;
+        }
+        aside {
+          flex-shrink: 0 !important;
+          overflow-y: auto !important;
         }
         main {
-          overflow-y: visible !important;
-          min-height: min-content !important;
+          flex: 1 1 auto !important;
+          min-height: 0 !important;
+          display: flex !important;
+          flex-direction: column !important;
+        }
+        .qbar {
+          flex-shrink: 0 !important;
+        }
+        .mapwrap {
+          flex: 1 1 auto !important;
+          min-height: 0 !important;
+          position: relative !important;
+        }
+        .rail {
+          flex-shrink: 0 !important;
+        }
+        footer {
+          flex-shrink: 0 !important;
+        }
+        @media (max-height: 480px) {
+          html, body {
+            height: auto !important;
+            overflow-y: auto !important;
+          }
+          .mapwrap {
+            min-height: 220px !important;
+          }
         }
       </style>`;
       const injection = `${baseTag}\n  ${scrollFixTag}`;

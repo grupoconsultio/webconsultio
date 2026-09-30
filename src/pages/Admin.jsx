@@ -1536,7 +1536,7 @@ const Admin = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
               className={`bg-[#0B0F17] border border-white/20 rounded-2xl flex flex-col shadow-2xl overflow-hidden transition-all duration-300 ${
-                isFullscreenPreview ? 'w-full h-full rounded-none' : 'w-full max-w-7xl h-[92vh]'
+                isFullscreenPreview ? 'w-full h-full rounded-none' : 'w-full max-w-7xl h-[95vh]'
               }`}
             >
               {/* Barra Superior del Visor */}
