@@ -76,7 +76,7 @@ const INITIAL_CLIENT_FOLDERS = [
 const INITIAL_CLIENT_WORKS = [
   {
     id: 'work-visita-papal',
-    clientFolderId: 'folder-consultio',
+    clientFolderId: 'CIQNwadklAnSpJr0JM85',
     title: 'Visita Papal a la Argentina',
     description: 'Dashboard de Business Intelligence con métricas en tiempo real, matriz de impactos y auditoría de sorteo.',
     sourceType: 'url',
@@ -87,7 +87,7 @@ const INITIAL_CLIENT_WORKS = [
   },
   {
     id: 'work-rio-cuarto-mapa',
-    clientFolderId: 'folder-rio-cuarto',
+    clientFolderId: 'FCSCePtNm4urAxAIMWUA',
     title: 'Encuesta Río Cuarto',
     description: 'Mapa interactivo de indicadores socioeconómicos, obras y opinión pública.',
     sourceType: 'url',
@@ -880,9 +880,14 @@ const Admin = () => {
     );
   });
 
-  // Trabajos de la carpeta seleccionada
+  // Trabajos de la carpeta seleccionada (soporta coincidencia por ID y por nombre para carpetas maestras)
   const folderWorks = selectedFolder
-    ? clientWorks.filter(w => w.clientFolderId === selectedFolder.id)
+    ? clientWorks.filter(w => {
+        if (w.clientFolderId === selectedFolder.id) return true;
+        if ((selectedFolder.name || '').toLowerCase() === 'consultio' && (w.clientFolderId === 'folder-consultio' || (w.title || '').toLowerCase().includes('visita papal'))) return true;
+        if ((selectedFolder.name || '').toLowerCase().includes('río cuarto') && (w.clientFolderId === 'folder-rio-cuarto' || (w.title || '').toLowerCase().includes('río cuarto'))) return true;
+        return false;
+      })
     : [];
 
   const filteredWorks = folderWorks.filter(w => {
@@ -1113,7 +1118,12 @@ const Admin = () => {
                       </div>
                     ) : (
                       filteredFolders.map(folder => {
-                        const worksInFolder = clientWorks.filter(w => w.clientFolderId === folder.id);
+                        const worksInFolder = clientWorks.filter(w => {
+                          if (w.clientFolderId === folder.id) return true;
+                          if ((folder.name || '').toLowerCase() === 'consultio' && (w.clientFolderId === 'folder-consultio' || (w.title || '').toLowerCase().includes('visita papal'))) return true;
+                          if ((folder.name || '').toLowerCase().includes('río cuarto') && (w.clientFolderId === 'folder-rio-cuarto' || (w.title || '').toLowerCase().includes('río cuarto'))) return true;
+                          return false;
+                        });
                         const assignedList = folder.assignedUsers !== undefined ? folder.assignedUsers : [folder.assignedUser || 'grupoconsultio'];
 
                         return (

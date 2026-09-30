@@ -594,7 +594,8 @@ app.get('/api/github/proxy/:owner/:repo/:branch/*', async (req, res) => {
       const pathDir = filePath.includes('/') ? filePath.substring(0, filePath.lastIndexOf('/') + 1) : '';
       const safePathDir = pathDir ? pathDir.split('/').map(encodeURIComponent).join('/') : '';
       const baseTag = `<base href="/api/github/proxy/${encodeURIComponent(owner)}/${encodeURIComponent(cleanRepo)}/${encodeURIComponent(branch)}/${safePathDir}${tokenQuery}">`;
-      const scrollFixTag = `<style id="consuldat-scroll-fix">
+      const isEncuestaDashboard = filePath.toLowerCase().includes('encuesta') && !filePath.toLowerCase().includes('atlas');
+      const scrollFixTag = isEncuestaDashboard ? `<style id="consuldat-scroll-fix">
         html, body {
           height: 100% !important;
           margin: 0 !important;
@@ -649,8 +650,8 @@ app.get('/api/github/proxy/:owner/:repo/:branch/*', async (req, res) => {
             min-height: 280px !important;
           }
         }
-      </style>`;
-      const injection = `${baseTag}\n  ${scrollFixTag}`;
+      </style>` : '';
+      const injection = scrollFixTag ? `${baseTag}\n  ${scrollFixTag}` : baseTag;
       
       if (htmlText.includes('<head>')) {
         htmlText = htmlText.replace('<head>', `<head>\n  ${injection}`);
