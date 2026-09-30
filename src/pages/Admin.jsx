@@ -182,7 +182,7 @@ const Admin = () => {
   // ── CARGA INICIAL DE DATOS ─────────────────────────────────
   useEffect(() => {
     if (sessionStorage.getItem('adminAuth') !== '1') {
-      navigate('/admin/login');
+      navigate('/login');
       return;
     }
 
@@ -302,7 +302,8 @@ const Admin = () => {
     sessionStorage.removeItem('adminAuth');
     sessionStorage.removeItem('userRole');
     sessionStorage.removeItem('userName');
-    navigate('/admin/login');
+    navigate('/login');
+    window.location.reload();
   };
 
   const handleTabChange = (tab) => {

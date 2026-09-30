@@ -16,9 +16,19 @@ import { motion, useScroll, useSpring } from 'framer-motion';
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = sessionStorage.getItem('adminAuth') === '1';
   if (!isAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/login" replace />;
   }
   return children;
+};
+
+const LoginOrAdmin = () => {
+  const [isAuth, setIsAuth] = React.useState(() => sessionStorage.getItem('adminAuth') === '1');
+
+  if (isAuth) {
+    return <Admin />;
+  }
+
+  return <AdminLogin onLoginSuccess={() => setIsAuth(true)} />;
 };
 
 const MainLanding = () => {
@@ -59,7 +69,8 @@ function App() {
     <div className="bg-brand-bg min-h-screen selection:bg-[var(--color-brand-cyan)] selection:text-black text-brand-accent font-sans">
       <Routes>
         <Route path="/" element={<MainLanding />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/login" element={<LoginOrAdmin />} />
+        <Route path="/admin/login" element={<Navigate to="/login" replace />} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/admin/encuesta-papa" element={<ProtectedRoute><EncuestaPapaDashboard /></ProtectedRoute>} />
         <Route path="/encuesta-papa" element={<EncuestaPapaDashboard />} />

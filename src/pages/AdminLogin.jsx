@@ -5,7 +5,7 @@ import { Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
 
-const AdminLogin = () => {
+const AdminLogin = ({ onLoginSuccess }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -15,9 +15,13 @@ const AdminLogin = () => {
 
   useEffect(() => {
     if (sessionStorage.getItem('adminAuth') === '1') {
-      navigate('/admin');
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      } else {
+        navigate('/login');
+      }
     }
-  }, [navigate]);
+  }, [navigate, onLoginSuccess]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,7 +37,11 @@ const AdminLogin = () => {
       sessionStorage.setItem('userRole', 'administrador');
       sessionStorage.setItem('userName', 'grupoconsultio');
       setLoading(false);
-      navigate('/admin');
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      } else {
+        navigate('/login');
+      }
       return;
     }
 
@@ -51,7 +59,11 @@ const AdminLogin = () => {
         sessionStorage.setItem('userRole', foundUser.role || 'lector');
         sessionStorage.setItem('userName', foundUser.username);
         setLoading(false);
-        navigate('/admin');
+        if (onLoginSuccess) {
+          onLoginSuccess();
+        } else {
+          navigate('/login');
+        }
         return;
       }
     } catch (err) {
@@ -69,7 +81,11 @@ const AdminLogin = () => {
       sessionStorage.setItem('userRole', foundLocal.role || 'lector');
       sessionStorage.setItem('userName', foundLocal.username);
       setLoading(false);
-      navigate('/admin');
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      } else {
+        navigate('/login');
+      }
     } else {
       setLoading(false);
       setError('Usuario o contraseña incorrectos.');
