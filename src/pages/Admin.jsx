@@ -42,7 +42,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 
 import { db, storage } from '../firebase';
-import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // ═══════════════════════════════════════════════════════════════
@@ -53,7 +53,7 @@ const INITIAL_CLIENT_FOLDERS = [
   {
     id: 'folder-consultio',
     name: 'CONSULTIO',
-    assignedUsers: ['grupoconsultio', 'todos'],
+    assignedUsers: ['grupoconsultio'],
     industry: 'Investigación & Opinión Pública',
     description: 'Carpeta institucional de ConsulDat / Grupo Consultio. Tableros federales y estudios nacionales.',
     createdAt: new Date('2026-03-01').toISOString(),
@@ -203,31 +203,41 @@ const Admin = () => {
       }
     };
 
-    // Cargar Carpetas de Clientes (con migración de las dos carpetas base)
+    // Cargar Carpetas de Clientes (con persistencia real en Firestore y cache local)
     const fetchFolders = async () => {
       try {
         const snap = await getDocs(collection(db, 'client_folders'));
-        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        
-        // Merge asegurando CONSULTIO y Municipalidad de Río Cuarto
-        const merged = [...INITIAL_CLIENT_FOLDERS];
-        list.forEach(item => {
-          if (!merged.some(m => m.id === item.id || m.name === item.name)) {
-            merged.push(item);
-          }
-        });
+        let list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        setClientFolders(merged);
-        localStorage.setItem('clientFolders', JSON.stringify(merged));
+        const deletedFolderIds = JSON.parse(localStorage.getItem('deletedFolderIds') || '[]');
+
+        // Asegurar que las carpetas base existan en Firestore si aún no se han creado y no fueron eliminadas
+        for (const initFolder of INITIAL_CLIENT_FOLDERS) {
+          if (deletedFolderIds.includes(initFolder.id)) continue;
+          const found = list.find(f => f.id === initFolder.id || (f.name && f.name.toLowerCase() === initFolder.name.toLowerCase()));
+          if (!found) {
+            try {
+              await setDoc(doc(db, 'client_folders', initFolder.id), initFolder);
+              list.push(initFolder);
+            } catch (e) {
+              list.push(initFolder);
+            }
+          }
+        }
+
+        setClientFolders(list);
+        try { localStorage.setItem('clientFolders', JSON.stringify(list)); } catch (e) {}
       } catch (err) {
+        console.warn('Fallo al obtener carpetas de Firestore, usando cache:', err);
         const stored = JSON.parse(localStorage.getItem('clientFolders') || '[]');
-        const merged = [...INITIAL_CLIENT_FOLDERS];
-        stored.forEach(item => {
-          if (!merged.some(m => m.id === item.id || m.name === item.name)) {
-            merged.push(item);
+        const deletedFolderIds = JSON.parse(localStorage.getItem('deletedFolderIds') || '[]');
+        let list = [...stored];
+        INITIAL_CLIENT_FOLDERS.forEach(initFolder => {
+          if (!deletedFolderIds.includes(initFolder.id) && !list.some(f => f.id === initFolder.id || (f.name && f.name.toLowerCase() === initFolder.name.toLowerCase()))) {
+            list.push(initFolder);
           }
         });
-        setClientFolders(merged);
+        setClientFolders(list);
       }
     };
 
@@ -235,35 +245,44 @@ const Admin = () => {
     const fetchWorks = async () => {
       try {
         const snap = await getDocs(collection(db, 'client_works'));
-        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        let list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         // Eliminar el test Informe Ejecutivo de Opinión Pública (Q1) si existe en Firestore
         const testItem = list.find(item => item.id === 'work-rio-cuarto-informe' || (item.title || '').includes('Informe Ejecutivo de Opinión Pública'));
         if (testItem) {
           try { await deleteDoc(doc(db, 'client_works', testItem.id)); } catch (e) {}
         }
-        
-        const filteredList = list.filter(item => item.id !== 'work-rio-cuarto-informe' && !(item.title || '').includes('Informe Ejecutivo de Opinión Pública'));
-        const merged = [...INITIAL_CLIENT_WORKS];
-        filteredList.forEach(item => {
-          if (!merged.some(m => m.id === item.id || m.title === item.title)) {
-            merged.push(item);
-          }
-        });
+        list = list.filter(item => item.id !== 'work-rio-cuarto-informe' && !(item.title || '').includes('Informe Ejecutivo de Opinión Pública'));
 
-        setClientWorks(merged);
-        localStorage.setItem('clientWorks', JSON.stringify(merged));
+        const deletedWorkIds = JSON.parse(localStorage.getItem('deletedWorkIds') || '[]');
+
+        // Asegurar que los trabajos iniciales existan en Firestore si aún no se han creado y no fueron eliminados
+        for (const initWork of INITIAL_CLIENT_WORKS) {
+          if (deletedWorkIds.includes(initWork.id)) continue;
+          const found = list.find(w => w.id === initWork.id || (w.title && w.title.toLowerCase() === initWork.title.toLowerCase()));
+          if (!found) {
+            try {
+              await setDoc(doc(db, 'client_works', initWork.id), initWork);
+              list.push(initWork);
+            } catch (e) {
+              list.push(initWork);
+            }
+          }
+        }
+
+        setClientWorks(list);
+        try { localStorage.setItem('clientWorks', JSON.stringify(list)); } catch (e) {}
       } catch (err) {
+        console.warn('Fallo al obtener trabajos de Firestore, usando cache:', err);
         const stored = JSON.parse(localStorage.getItem('clientWorks') || '[]');
-        const filteredStored = stored.filter(item => item.id !== 'work-rio-cuarto-informe' && !(item.title || '').includes('Informe Ejecutivo de Opinión Pública'));
-        const merged = [...INITIAL_CLIENT_WORKS];
-        filteredStored.forEach(item => {
-          if (!merged.some(m => m.id === item.id || m.title === item.title)) {
-            merged.push(item);
+        const deletedWorkIds = JSON.parse(localStorage.getItem('deletedWorkIds') || '[]');
+        let list = stored.filter(item => item.id !== 'work-rio-cuarto-informe' && !(item.title || '').includes('Informe Ejecutivo de Opinión Pública'));
+        INITIAL_CLIENT_WORKS.forEach(initWork => {
+          if (!deletedWorkIds.includes(initWork.id) && !list.some(w => w.id === initWork.id || (w.title && w.title.toLowerCase() === initWork.title.toLowerCase()))) {
+            list.push(initWork);
           }
         });
-        setClientWorks(merged);
-        try { localStorage.setItem('clientWorks', JSON.stringify(merged)); } catch (e) {}
+        setClientWorks(list);
       }
     };
 
@@ -464,7 +483,7 @@ const Admin = () => {
     e.preventDefault();
     if (!editingFolder || !editingFolder.name.trim()) return;
 
-    const assigned = editingFolder.assignedUsers?.length > 0 ? editingFolder.assignedUsers : ['grupoconsultio'];
+    const assigned = editingFolder.assignedUsers !== undefined ? editingFolder.assignedUsers : ['grupoconsultio'];
     const updatedData = {
       name: editingFolder.name.trim(),
       industry: editingFolder.industry?.trim() || 'General',
@@ -474,7 +493,7 @@ const Admin = () => {
     };
 
     try {
-      await updateDoc(doc(db, 'client_folders', editingFolder.id), updatedData);
+      await setDoc(doc(db, 'client_folders', editingFolder.id), updatedData, { merge: true });
     } catch (err) {
       console.warn('Error actualizando carpeta en Firestore:', err);
     }
@@ -524,6 +543,14 @@ const Admin = () => {
         console.warn('Error eliminando carpeta en Firestore:', err);
       }
 
+      try {
+        const deletedIds = JSON.parse(localStorage.getItem('deletedFolderIds') || '[]');
+        if (!deletedIds.includes(id)) {
+          deletedIds.push(id);
+          localStorage.setItem('deletedFolderIds', JSON.stringify(deletedIds));
+        }
+      } catch (e) {}
+
       const updatedFolders = clientFolders.filter(f => f.id !== id);
       setClientFolders(updatedFolders);
       try { localStorage.setItem('clientFolders', JSON.stringify(updatedFolders)); } catch (e) {}
@@ -541,6 +568,14 @@ const Admin = () => {
       } catch (err) {
         console.warn('Error eliminando trabajo en Firestore:', err);
       }
+
+      try {
+        const deletedIds = JSON.parse(localStorage.getItem('deletedWorkIds') || '[]');
+        if (!deletedIds.includes(id)) {
+          deletedIds.push(id);
+          localStorage.setItem('deletedWorkIds', JSON.stringify(deletedIds));
+        }
+      } catch (e) {}
 
       const updated = clientWorks.filter(w => w.id !== id);
       setClientWorks(updated);
@@ -738,7 +773,7 @@ const Admin = () => {
       };
 
       try {
-        await updateDoc(doc(db, 'client_works', editingWork.id), updatedData);
+        await setDoc(doc(db, 'client_works', editingWork.id), updatedData, { merge: true });
       } catch (err) {
         console.warn('Error actualizando trabajo en Firestore:', err);
       }
@@ -1076,7 +1111,7 @@ const Admin = () => {
                     ) : (
                       filteredFolders.map(folder => {
                         const worksInFolder = clientWorks.filter(w => w.clientFolderId === folder.id);
-                        const assignedList = folder.assignedUsers || [folder.assignedUser || 'todos'];
+                        const assignedList = folder.assignedUsers !== undefined ? folder.assignedUsers : [folder.assignedUser || 'grupoconsultio'];
 
                         return (
                           <motion.div
@@ -1091,11 +1126,17 @@ const Admin = () => {
                                   <Folder size={24} />
                                 </div>
                                 <div className="flex flex-wrap gap-1 justify-end max-w-[200px]">
-                                  {assignedList.map(u => (
-                                    <span key={u} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/5 text-slate-300 border border-white/10 flex items-center gap-1">
-                                      <Users size={10} className="text-[var(--color-brand-cyan)]" /> @{u}
+                                  {assignedList.length === 0 ? (
+                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/5 text-amber-300 border border-white/10 flex items-center gap-1">
+                                      <Lock size={10} className="text-amber-400" /> Solo Admin
                                     </span>
-                                  ))}
+                                  ) : (
+                                    assignedList.map(u => (
+                                      <span key={u} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/5 text-slate-300 border border-white/10 flex items-center gap-1">
+                                        <Users size={10} className="text-[var(--color-brand-cyan)]" /> @{u}
+                                      </span>
+                                    ))
+                                  )}
                                 </div>
                               </div>
 
@@ -1170,11 +1211,17 @@ const Admin = () => {
                             <span className="text-[var(--color-brand-cyan)] font-medium">{selectedFolder.industry}</span>
                             <span>•</span>
                             <span>Acceso para: </span>
-                            {(selectedFolder.assignedUsers || [selectedFolder.assignedUser || 'todos']).map(u => (
-                              <span key={u} className="px-2 py-0.5 bg-white/5 rounded text-[11px] text-white font-medium border border-white/10">
-                                @{u}
+                            {((selectedFolder.assignedUsers !== undefined ? selectedFolder.assignedUsers : [selectedFolder.assignedUser || 'grupoconsultio']).length === 0) ? (
+                              <span className="px-2 py-0.5 bg-white/5 rounded text-[11px] text-amber-300 font-medium border border-white/10 flex items-center gap-1">
+                                <Lock size={10} /> Solo Administrador
                               </span>
-                            ))}
+                            ) : (
+                              (selectedFolder.assignedUsers !== undefined ? selectedFolder.assignedUsers : [selectedFolder.assignedUser || 'grupoconsultio']).map(u => (
+                                <span key={u} className="px-2 py-0.5 bg-white/5 rounded text-[11px] text-white font-medium border border-white/10">
+                                  @{u}
+                                </span>
+                              ))
+                            )}
                           </div>
                         </div>
                       </div>
