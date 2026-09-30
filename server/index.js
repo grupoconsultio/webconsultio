@@ -15,7 +15,8 @@ const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Mapeo de Provincias Argentinas por Región
 const REGIONES = {
@@ -521,6 +522,8 @@ app.get('/api/survey/export/raffle', async (req, res) => {
     console.error('Error exporting raffle:', error);
     res.status(500).json({ success: false, error: error.message });
   }
+});
+
 // 7. Proxy de Despliegue Directo de GitHub para Tableros Interactivos
 app.get('/api/github/proxy/:owner/:repo/:branch/*', async (req, res) => {
   const { owner, repo, branch } = req.params;
@@ -604,6 +607,31 @@ app.get('/api/github/proxy/:owner/:repo/:branch/*', async (req, res) => {
   } catch (err) {
     console.error("Error en proxy de GitHub:", err);
     res.status(500).send("Error interno cargando tablero: " + err.message);
+  }
+});
+
+// 8. Carga y servicio de archivos para el gestor de trabajos (PDF, Excel, imágenes, etc.)
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) {
+  try { fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch (e) {}
+}
+app.use('/uploads', express.static(UPLOADS_DIR));
+
+app.post('/api/upload', async (req, res) => {
+  try {
+    const { name, dataUrl } = req.body;
+    if (!name || !dataUrl) {
+      return res.status(400).json({ success: false, error: 'Nombre o datos de archivo faltantes' });
+    }
+    const safeName = `${Date.now()}_${name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+    const base64Data = dataUrl.replace(/^data:([A-Za-z0-9-+/]+);base64,/, '');
+    const buffer = Buffer.from(base64Data, 'base64');
+    fs.writeFileSync(path.join(UPLOADS_DIR, safeName), buffer);
+    const fileUrl = `/uploads/${safeName}`;
+    res.json({ success: true, url: fileUrl });
+  } catch (err) {
+    console.error('Error al subir archivo:', err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

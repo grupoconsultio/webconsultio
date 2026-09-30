@@ -34,9 +34,10 @@ import {
   Maximize2,
   Minimize2,
   Lock,
-  Unlock,
   Check,
-  AlertCircle
+  AlertCircle,
+  Pencil,
+  AlertTriangle
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -133,9 +134,24 @@ const Admin = () => {
   const [workSearch, setWorkSearch]       = useState('');
 
   // Modales
-  const [showAddFolderModal, setShowAddFolderModal] = useState(false);
-  const [showAddWorkModal, setShowAddWorkModal]     = useState(false);
-  const [activePreviewWork, setActivePreviewWork]   = useState(null); // Modal de visualización
+  const [showAddFolderModal, setShowAddFolderModal]   = useState(false);
+  const [showEditFolderModal, setShowEditFolderModal] = useState(false);
+  const [editingFolder, setEditingFolder]             = useState(null);
+
+  const [showAddWorkModal, setShowAddWorkModal]       = useState(false);
+  const [showEditWorkModal, setShowEditWorkModal]     = useState(false);
+  const [editingWork, setEditingWork]                 = useState(null);
+  const [editingWorkFileObj, setEditingWorkFileObj]   = useState(null);
+
+  const [deleteConfirmModal, setDeleteConfirmModal]   = useState({
+    isOpen: false,
+    type: null, // 'folder' | 'work'
+    id: null,
+    title: '',
+    message: ''
+  });
+
+  const [activePreviewWork, setActivePreviewWork]     = useState(null); // Modal de visualización
   const [isFullscreenPreview, setIsFullscreenPreview] = useState(false);
 
   // Formulario Nuevo Cliente / Carpeta
@@ -380,22 +396,29 @@ const Admin = () => {
   // ═══════════════════════════════════════════════════════════════
   // GESTIÓN DE CLIENTES / CARPETAS (MULTI-USUARIO Y ADMIN)
   // ═══════════════════════════════════════════════════════════════
-  const toggleUserInFolder = (userToToggle) => {
-    setNewFolder(prev => {
-      const exists = prev.assignedUsers.includes(userToToggle);
-      if (exists) {
-        // No permitir deseleccionar todo si queda vacío
+  // ═══════════════════════════════════════════════════════════════
+  // GESTIÓN DE CLIENTES / CARPETAS (MULTI-USUARIO Y ADMIN)
+  // ═══════════════════════════════════════════════════════════════
+  const toggleUserInFolder = (userToToggle, isEdit = false) => {
+    if (isEdit) {
+      setEditingFolder(prev => {
+        if (!prev) return prev;
+        const current = prev.assignedUsers || [];
+        const exists = current.includes(userToToggle);
+        const updated = exists ? current.filter(u => u !== userToToggle) : [...current, userToToggle];
+        return { ...prev, assignedUsers: updated };
+      });
+    } else {
+      setNewFolder(prev => {
+        const exists = prev.assignedUsers.includes(userToToggle);
         return {
           ...prev,
-          assignedUsers: prev.assignedUsers.filter(u => u !== userToToggle)
+          assignedUsers: exists
+            ? prev.assignedUsers.filter(u => u !== userToToggle)
+            : [...prev.assignedUsers, userToToggle]
         };
-      } else {
-        return {
-          ...prev,
-          assignedUsers: [...prev.assignedUsers, userToToggle]
-        };
-      }
-    });
+      });
+    }
   };
 
   const handleCreateFolder = async (e) => {
@@ -419,44 +442,161 @@ const Admin = () => {
       const created = { ...folderObj, id: docRef.id };
       const updated = [created, ...clientFolders];
       setClientFolders(updated);
-      localStorage.setItem('clientFolders', JSON.stringify(updated));
+      try { localStorage.setItem('clientFolders', JSON.stringify(updated)); } catch (e) {}
     } catch (err) {
       const created = { ...folderObj, id: `folder-${Date.now()}` };
       const updated = [created, ...clientFolders];
       setClientFolders(updated);
-      localStorage.setItem('clientFolders', JSON.stringify(updated));
+      try { localStorage.setItem('clientFolders', JSON.stringify(updated)); } catch (e) {}
     }
 
     setNewFolder({ name: '', assignedUsers: ['grupoconsultio'], industry: '', description: '' });
     setShowAddFolderModal(false);
   };
 
-  const handleDeleteFolder = async (folderId, e) => {
+  const handleOpenEditFolder = (folder, e) => {
     e?.stopPropagation();
-    if (!window.confirm('¿Seguro que deseas eliminar esta carpeta de cliente y todos sus trabajos asociados?')) return;
+    const assigned = folder.assignedUsers || [folder.assignedUser || 'grupoconsultio'];
+    setEditingFolder({
+      ...folder,
+      assignedUsers: assigned
+    });
+    setShowEditFolderModal(true);
+  };
+
+  const handleUpdateFolder = async (e) => {
+    e.preventDefault();
+    if (!editingFolder || !editingFolder.name.trim()) return;
+
+    const assigned = editingFolder.assignedUsers?.length > 0 ? editingFolder.assignedUsers : ['grupoconsultio'];
+    const updatedData = {
+      name: editingFolder.name.trim(),
+      industry: editingFolder.industry?.trim() || 'General',
+      description: editingFolder.description?.trim() || '',
+      assignedUsers: assigned,
+      updatedAt: new Date().toISOString()
+    };
 
     try {
-      await deleteDoc(doc(db, 'client_folders', folderId));
+      await updateDoc(doc(db, 'client_folders', editingFolder.id), updatedData);
     } catch (err) {
-      console.warn('Error eliminando en Firestore:', err);
+      console.warn('Error actualizando carpeta en Firestore:', err);
     }
 
-    const updatedFolders = clientFolders.filter(f => f.id !== folderId);
+    const updatedFolders = clientFolders.map(f => f.id === editingFolder.id ? { ...f, ...updatedData } : f);
     setClientFolders(updatedFolders);
-    localStorage.setItem('clientFolders', JSON.stringify(updatedFolders));
+    try { localStorage.setItem('clientFolders', JSON.stringify(updatedFolders)); } catch (e) {}
 
-    const updatedWorks = clientWorks.filter(w => w.clientFolderId !== folderId);
-    setClientWorks(updatedWorks);
-    localStorage.setItem('clientWorks', JSON.stringify(updatedWorks));
-
-    if (selectedFolder?.id === folderId) {
-      setSelectedFolder(null);
+    if (selectedFolder?.id === editingFolder.id) {
+      setSelectedFolder({ ...selectedFolder, ...updatedData });
     }
+
+    setShowEditFolderModal(false);
+    setEditingFolder(null);
+  };
+
+  const handleRequestDeleteFolder = (folder, e) => {
+    e?.stopPropagation();
+    setDeleteConfirmModal({
+      isOpen: true,
+      type: 'folder',
+      id: folder.id,
+      title: '¿Eliminar Carpeta de Cliente?',
+      message: `Estás a punto de eliminar permanentemente la carpeta "${folder.name}". Se eliminarán también todos los trabajos e informes asociados.`
+    });
+  };
+
+  const handleRequestDeleteWork = (work, e) => {
+    e?.stopPropagation();
+    setDeleteConfirmModal({
+      isOpen: true,
+      type: 'work',
+      id: work.id,
+      title: '¿Eliminar Trabajo?',
+      message: `¿Estás seguro de que deseas eliminar permanentemente el trabajo "${work.title}"?`
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    const { type, id } = deleteConfirmModal;
+    if (!type || !id) return;
+
+    if (type === 'folder') {
+      try {
+        await deleteDoc(doc(db, 'client_folders', id));
+      } catch (err) {
+        console.warn('Error eliminando carpeta en Firestore:', err);
+      }
+
+      const updatedFolders = clientFolders.filter(f => f.id !== id);
+      setClientFolders(updatedFolders);
+      try { localStorage.setItem('clientFolders', JSON.stringify(updatedFolders)); } catch (e) {}
+
+      const updatedWorks = clientWorks.filter(w => w.clientFolderId !== id);
+      setClientWorks(updatedWorks);
+      try { localStorage.setItem('clientWorks', JSON.stringify(updatedWorks)); } catch (e) {}
+
+      if (selectedFolder?.id === id) {
+        setSelectedFolder(null);
+      }
+    } else if (type === 'work') {
+      try {
+        await deleteDoc(doc(db, 'client_works', id));
+      } catch (err) {
+        console.warn('Error eliminando trabajo en Firestore:', err);
+      }
+
+      const updated = clientWorks.filter(w => w.id !== id);
+      setClientWorks(updated);
+      try { localStorage.setItem('clientWorks', JSON.stringify(updated)); } catch (e) {}
+
+      if (activePreviewWork?.id === id) {
+        setActivePreviewWork(null);
+      }
+    }
+
+    setDeleteConfirmModal({ isOpen: false, type: null, id: null, title: '', message: '' });
   };
 
   // ═══════════════════════════════════════════════════════════════
   // GESTIÓN DE TRABAJOS (CARGA Y VISUALIZADOR)
   // ═══════════════════════════════════════════════════════════════
+  const uploadFilePayload = async (rawFile, dataUrl, folderId) => {
+    // 1. Intento principal: Subir al servidor /api/upload
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: rawFile.name, dataUrl })
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.url) {
+          return json.url;
+        }
+      }
+    } catch (err) {
+      console.warn('Fallo subida a servidor, intentando Storage:', err);
+    }
+
+    // 2. Intento secundario: Firebase Storage
+    try {
+      const filePath = `client_works/${folderId}/${Date.now()}_${rawFile.name}`;
+      const storageRef = ref(storage, filePath);
+      await uploadBytes(storageRef, rawFile);
+      return await getDownloadURL(storageRef);
+    } catch (err) {
+      console.warn('Fallo Firebase Storage:', err);
+    }
+
+    // 3. Fallback: DataURL solo si es pequeño (< 400KB)
+    if (dataUrl && dataUrl.length < 400000) {
+      return dataUrl;
+    }
+
+    throw new Error('No se pudo subir el archivo. Verifica tu conexión.');
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -477,91 +617,151 @@ const Admin = () => {
     reader.readAsDataURL(file);
   };
 
+  const handleEditFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setEditingWorkFileObj({
+        name: file.name,
+        size: `${sizeInMb} MB`,
+        type: ext,
+        rawFile: file,
+        dataUrl: event.target.result
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleCreateWork = async (e) => {
     e.preventDefault();
     if (!selectedFolder || !newWork.title.trim()) return;
 
     setIsUploading(true);
 
-    let fileUrl = '';
-    let storagePath = '';
-
-    if (newWork.sourceType === 'file' && uploadedFileObj?.rawFile) {
-      try {
-        const filePath = `client_works/${selectedFolder.id}/${Date.now()}_${uploadedFileObj.name}`;
-        const storageRef = ref(storage, filePath);
-        await uploadBytes(storageRef, uploadedFileObj.rawFile);
-        fileUrl = await getDownloadURL(storageRef);
-        storagePath = filePath;
-      } catch (err) {
-        fileUrl = uploadedFileObj.dataUrl || '';
-      }
-    }
-
-    const workObj = {
-      clientFolderId: selectedFolder.id,
-      title: newWork.title.trim(),
-      description: newWork.description.trim(),
-      category: newWork.category || 'Tablero',
-      sourceType: newWork.sourceType, // 'url' | 'file' | 'github'
-      url: newWork.sourceType === 'url' ? newWork.url.trim() : '',
-      fileName: newWork.sourceType === 'file' ? (uploadedFileObj?.name || 'archivo') : '',
-      fileType: newWork.sourceType === 'file' ? (uploadedFileObj?.type || 'file') : '',
-      fileSize: newWork.sourceType === 'file' ? (uploadedFileObj?.size || '—') : '',
-      fileData: newWork.sourceType === 'file' ? (fileUrl || uploadedFileObj?.dataUrl || '') : '',
-      storagePath,
-      githubRepo: newWork.sourceType === 'github' ? newWork.githubRepo.trim() : '',
-      githubBranch: newWork.sourceType === 'github' ? (newWork.githubBranch.trim() || 'main') : '',
-      githubPath: newWork.sourceType === 'github' ? (newWork.githubPath.trim() || 'index.html') : '',
-      createdAt: new Date().toISOString(),
-      createdBy: userName
-    };
-
     try {
-      const docRef = await addDoc(collection(db, 'client_works'), workObj);
-      const created = { ...workObj, id: docRef.id };
-      const updated = [created, ...clientWorks];
-      setClientWorks(updated);
-      localStorage.setItem('clientWorks', JSON.stringify(updated));
-    } catch (err) {
-      const created = { ...workObj, id: `work-${Date.now()}` };
-      const updated = [created, ...clientWorks];
-      setClientWorks(updated);
-      localStorage.setItem('clientWorks', JSON.stringify(updated));
-    }
+      let fileUrl = '';
+      if (newWork.sourceType === 'file' && uploadedFileObj?.rawFile) {
+        fileUrl = await uploadFilePayload(uploadedFileObj.rawFile, uploadedFileObj.dataUrl, selectedFolder.id);
+      }
 
-    setIsUploading(false);
-    setNewWork({
-      title: '',
-      description: '',
-      category: 'Tablero',
-      sourceType: 'url',
-      url: '',
-      githubRepo: githubRepos[0]?.full_name || '',
-      githubBranch: 'main',
-      githubPath: 'index.html',
-      githubUrl: ''
-    });
-    setUploadedFileObj(null);
-    setShowAddWorkModal(false);
+      const workObj = {
+        clientFolderId: selectedFolder.id,
+        title: newWork.title.trim(),
+        description: newWork.description.trim(),
+        category: newWork.category || 'Tablero',
+        sourceType: newWork.sourceType, // 'url' | 'file' | 'github'
+        url: newWork.sourceType === 'url' ? newWork.url.trim() : '',
+        fileName: newWork.sourceType === 'file' ? (uploadedFileObj?.name || 'archivo') : '',
+        fileType: newWork.sourceType === 'file' ? (uploadedFileObj?.type || 'file') : '',
+        fileSize: newWork.sourceType === 'file' ? (uploadedFileObj?.size || '—') : '',
+        fileData: newWork.sourceType === 'file' ? fileUrl : '',
+        githubRepo: newWork.sourceType === 'github' ? newWork.githubRepo.trim() : '',
+        githubBranch: newWork.sourceType === 'github' ? (newWork.githubBranch.trim() || 'main') : '',
+        githubPath: newWork.sourceType === 'github' ? (newWork.githubPath.trim() || 'index.html') : '',
+        createdAt: new Date().toISOString(),
+        createdBy: userName
+      };
+
+      try {
+        const docRef = await addDoc(collection(db, 'client_works'), workObj);
+        const created = { ...workObj, id: docRef.id };
+        const updated = [created, ...clientWorks];
+        setClientWorks(updated);
+        try { localStorage.setItem('clientWorks', JSON.stringify(updated)); } catch (e) {}
+      } catch (err) {
+        const created = { ...workObj, id: `work-${Date.now()}` };
+        const updated = [created, ...clientWorks];
+        setClientWorks(updated);
+        try { localStorage.setItem('clientWorks', JSON.stringify(updated)); } catch (e) {}
+      }
+
+      setNewWork({
+        title: '',
+        description: '',
+        category: 'Tablero',
+        sourceType: 'url',
+        url: '',
+        githubRepo: githubRepos[0]?.full_name || '',
+        githubBranch: 'main',
+        githubPath: 'index.html',
+        githubUrl: ''
+      });
+      setUploadedFileObj(null);
+      setShowAddWorkModal(false);
+    } catch (err) {
+      alert(`Error al guardar trabajo: ${err.message}`);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
-  const handleDeleteWork = async (workId, e) => {
+  const handleOpenEditWork = (work, e) => {
     e?.stopPropagation();
-    if (!window.confirm('¿Deseas eliminar este trabajo?')) return;
+    setEditingWork({ ...work });
+    setEditingWorkFileObj(null);
+    setShowEditWorkModal(true);
+  };
 
+  const handleUpdateWork = async (e) => {
+    e.preventDefault();
+    if (!editingWork || !editingWork.title.trim()) return;
+
+    setIsUploading(true);
     try {
-      await deleteDoc(doc(db, 'client_works', workId));
+      let fileUrl = editingWork.fileData || '';
+      let fileName = editingWork.fileName || '';
+      let fileType = editingWork.fileType || '';
+      let fileSize = editingWork.fileSize || '';
+
+      if (editingWork.sourceType === 'file' && editingWorkFileObj?.rawFile) {
+        fileUrl = await uploadFilePayload(editingWorkFileObj.rawFile, editingWorkFileObj.dataUrl, editingWork.clientFolderId);
+        fileName = editingWorkFileObj.name;
+        fileType = editingWorkFileObj.type;
+        fileSize = editingWorkFileObj.size;
+      }
+
+      const updatedData = {
+        title: editingWork.title.trim(),
+        description: editingWork.description?.trim() || '',
+        category: editingWork.category || 'Tablero',
+        sourceType: editingWork.sourceType,
+        url: editingWork.sourceType === 'url' ? (editingWork.url || '').trim() : '',
+        fileName: editingWork.sourceType === 'file' ? fileName : '',
+        fileType: editingWork.sourceType === 'file' ? fileType : '',
+        fileSize: editingWork.sourceType === 'file' ? fileSize : '',
+        fileData: editingWork.sourceType === 'file' ? fileUrl : '',
+        githubRepo: editingWork.sourceType === 'github' ? (editingWork.githubRepo || '').trim() : '',
+        githubBranch: editingWork.sourceType === 'github' ? ((editingWork.githubBranch || '').trim() || 'main') : '',
+        githubPath: editingWork.sourceType === 'github' ? ((editingWork.githubPath || '').trim() || 'index.html') : '',
+        updatedAt: new Date().toISOString()
+      };
+
+      try {
+        await updateDoc(doc(db, 'client_works', editingWork.id), updatedData);
+      } catch (err) {
+        console.warn('Error actualizando trabajo en Firestore:', err);
+      }
+
+      const updatedWorks = clientWorks.map(w => w.id === editingWork.id ? { ...w, ...updatedData } : w);
+      setClientWorks(updatedWorks);
+      try { localStorage.setItem('clientWorks', JSON.stringify(updatedWorks)); } catch (e) {}
+
+      if (activePreviewWork?.id === editingWork.id) {
+        setActivePreviewWork({ ...activePreviewWork, ...updatedData });
+      }
+
+      setShowEditWorkModal(false);
+      setEditingWork(null);
+      setEditingWorkFileObj(null);
     } catch (err) {
-      console.warn('Error eliminando trabajo en Firestore:', err);
-    }
-
-    const updated = clientWorks.filter(w => w.id !== workId);
-    setClientWorks(updated);
-    localStorage.setItem('clientWorks', JSON.stringify(updated));
-
-    if (activePreviewWork?.id === workId) {
-      setActivePreviewWork(null);
+      alert(`Error al actualizar trabajo: ${err.message}`);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -922,13 +1122,22 @@ const Admin = () => {
 
                               <div className="flex items-center gap-2">
                                 {userRole === 'administrador' && (
-                                  <button
-                                    onClick={(e) => handleDeleteFolder(folder.id, e)}
-                                    className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-colors"
-                                    title="Eliminar carpeta de cliente"
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
+                                  <>
+                                    <button
+                                      onClick={(e) => handleOpenEditFolder(folder, e)}
+                                      className="p-2 text-slate-400 hover:text-[var(--color-brand-cyan)] hover:bg-[var(--color-brand-cyan)]/10 rounded-lg transition-colors"
+                                      title="Editar carpeta de cliente"
+                                    >
+                                      <Pencil size={15} />
+                                    </button>
+                                    <button
+                                      onClick={(e) => handleRequestDeleteFolder(folder, e)}
+                                      className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-colors"
+                                      title="Eliminar carpeta de cliente"
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </>
                                 )}
                                 <span className="btn-primary py-1.5 px-3 text-xs flex items-center gap-1">
                                   Abrir <ChevronRight size={14} />
@@ -975,14 +1184,22 @@ const Admin = () => {
                       </div>
                     </div>
 
-                    {/* Botón Cargar Trabajo */}
+                    {/* Botón Cargar Trabajo y Editar Carpeta */}
                     {userRole === 'administrador' && (
-                      <button
-                        onClick={() => setShowAddWorkModal(true)}
-                        className="btn-primary flex items-center gap-2 py-3 px-5 text-sm self-start md:self-auto shadow-lg shadow-[var(--color-brand-cyan)]/20"
-                      >
-                        <Plus size={18} /> Cargar Trabajo
-                      </button>
+                      <div className="flex items-center gap-2 self-start md:self-auto">
+                        <button
+                          onClick={(e) => handleOpenEditFolder(selectedFolder, e)}
+                          className="px-3.5 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white border border-white/10 flex items-center gap-2 text-xs font-semibold transition-colors"
+                        >
+                          <Pencil size={15} className="text-[var(--color-brand-cyan)]" /> Editar Carpeta
+                        </button>
+                        <button
+                          onClick={() => setShowAddWorkModal(true)}
+                          className="btn-primary flex items-center gap-2 py-3 px-5 text-sm shadow-lg shadow-[var(--color-brand-cyan)]/20"
+                        >
+                          <Plus size={18} /> Cargar Trabajo
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -1092,7 +1309,7 @@ const Admin = () => {
                             )}
                           </div>
 
-                          {/* Acciones del Trabajo (Visualizar + Descargar + Eliminar) */}
+                          {/* Acciones del Trabajo (Visualizar + Editar + Descargar + Eliminar) */}
                           <div className="pt-3 border-t border-white/5 flex items-center justify-between gap-2">
                             {/* Botón Principal: Visualizar en el Modal */}
                             <button
@@ -1101,6 +1318,17 @@ const Admin = () => {
                             >
                               <Eye size={14} /> Visualizar
                             </button>
+
+                            {/* Botón Editar Trabajo (solo admin) */}
+                            {userRole === 'administrador' && (
+                              <button
+                                onClick={(e) => handleOpenEditWork(work, e)}
+                                className="p-2 text-slate-400 hover:text-[var(--color-brand-cyan)] hover:bg-[var(--color-brand-cyan)]/10 rounded-lg transition-colors flex-shrink-0"
+                                title="Editar trabajo"
+                              >
+                                <Pencil size={15} />
+                              </button>
+                            )}
 
                             {/* Botón Descargar (si es archivo) */}
                             {work.sourceType === 'file' && work.fileData && (
@@ -1117,7 +1345,7 @@ const Admin = () => {
                             {/* Botón Eliminar Trabajo (solo admin) */}
                             {userRole === 'administrador' && (
                               <button
-                                onClick={(e) => handleDeleteWork(work.id, e)}
+                                onClick={(e) => handleRequestDeleteWork(work, e)}
                                 className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-colors flex-shrink-0"
                                 title="Eliminar trabajo"
                               >
@@ -1982,6 +2210,394 @@ const Admin = () => {
                     className="btn-primary py-2 px-5 text-xs flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white"
                   >
                     <Check size={14} /> Conectar Cuenta
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════════════════════════════════════════════════════════════
+          MODAL: POPUP DE CONFIRMACIÓN DE ELIMINACIÓN
+         ══════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {deleteConfirmModal.isOpen && (
+          <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-[#0F172A] border border-rose-500/30 rounded-2xl p-6 shadow-2xl relative flex flex-col items-center text-center"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 mb-4">
+                <AlertTriangle size={28} />
+              </div>
+
+              <h3 className="text-lg font-bold text-white mb-2">
+                {deleteConfirmModal.title}
+              </h3>
+              <p className="text-xs text-slate-300 mb-6 leading-relaxed">
+                {deleteConfirmModal.message}
+              </p>
+
+              <div className="flex items-center gap-3 w-full">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmModal({ isOpen: false, type: null, id: null, title: '', message: '' })}
+                  className="flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 shadow-lg shadow-rose-600/25 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <Trash2 size={14} /> Eliminar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════════════════════════════════════════════════════════════
+          MODAL: EDITAR CARPETA DE CLIENTE
+         ══════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {showEditFolderModal && editingFolder && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-lg bg-[#0F172A] border border-white/10 rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto"
+            >
+              <button
+                onClick={() => { setShowEditFolderModal(false); setEditingFolder(null); }}
+                className="absolute top-5 right-5 text-slate-400 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-[var(--color-brand-cyan)]/20 border border-[var(--color-brand-cyan)]/40 flex items-center justify-center text-[var(--color-brand-cyan)]">
+                  <Pencil size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Editar Carpeta de Cliente</h3>
+                  <p className="text-xs text-brand-secondary">Modifica nombre, sector y asignación de usuarios.</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleUpdateFolder} className="flex flex-col gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Nombre del Cliente / Carpeta <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editingFolder.name}
+                    onChange={(e) => setEditingFolder({ ...editingFolder, name: e.target.value })}
+                    className={inputCls}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Usuarios con Acceso (Selección Múltiple) <span className="text-rose-400">*</span>
+                  </label>
+                  <div className="p-3 rounded-xl bg-[#131B2E] border border-white/10 flex flex-col gap-2 max-h-48 overflow-y-auto">
+                    {/* Super admin */}
+                    <label
+                      onClick={() => toggleUserInFolder('grupoconsultio', true)}
+                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${
+                        (editingFolder.assignedUsers || []).includes('grupoconsultio')
+                          ? 'bg-[var(--color-brand-cyan)]/15 border border-[var(--color-brand-cyan)]/40 text-white font-semibold'
+                          : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 text-xs">
+                        <ShieldCheck size={14} className="text-purple-400" />
+                        <span>@grupoconsultio (Administrador / Dueño)</span>
+                      </span>
+                      {(editingFolder.assignedUsers || []).includes('grupoconsultio') && (
+                        <Check size={14} className="text-[var(--color-brand-cyan)]" />
+                      )}
+                    </label>
+
+                    {/* Todos los usuarios */}
+                    <label
+                      onClick={() => toggleUserInFolder('todos', true)}
+                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${
+                        (editingFolder.assignedUsers || []).includes('todos')
+                          ? 'bg-purple-500/20 border border-purple-500/40 text-purple-200 font-semibold'
+                          : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 text-xs">
+                        <Globe size={14} className="text-purple-400" />
+                        <span>Todos los usuarios (Acceso general / Público)</span>
+                      </span>
+                      {(editingFolder.assignedUsers || []).includes('todos') && (
+                        <Check size={14} className="text-purple-400" />
+                      )}
+                    </label>
+
+                    {/* Usuarios registrados */}
+                    {appUsers.map(u => (
+                      <label
+                        key={u.id}
+                        onClick={() => toggleUserInFolder(u.username, true)}
+                        className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${
+                          (editingFolder.assignedUsers || []).includes(u.username)
+                            ? 'bg-[var(--color-brand-cyan)]/15 border border-[var(--color-brand-cyan)]/40 text-white font-semibold'
+                            : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2 text-xs">
+                          <Users size={14} className="text-[var(--color-brand-cyan)]" />
+                          <span>@{u.username} <span className="text-[10px] text-slate-400 font-normal">({u.role})</span></span>
+                        </span>
+                        {(editingFolder.assignedUsers || []).includes(u.username) && (
+                          <Check size={14} className="text-[var(--color-brand-cyan)]" />
+                        )}
+                      </label>
+                    ))}
+                  </div>
+
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Usuarios con acceso ({editingFolder.assignedUsers?.length || 0}):{' '}
+                    <strong className="text-[var(--color-brand-cyan)]">
+                      {(editingFolder.assignedUsers || []).map(u => `@${u}`).join(', ')}
+                    </strong>
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Sector / Industria
+                  </label>
+                  <input
+                    type="text"
+                    value={editingFolder.industry || ''}
+                    onChange={(e) => setEditingFolder({ ...editingFolder, industry: e.target.value })}
+                    className={inputCls}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Descripción / Notas
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={editingFolder.description || ''}
+                    onChange={(e) => setEditingFolder({ ...editingFolder, description: e.target.value })}
+                    className={textareaCls}
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 mt-4 pt-3 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => { setShowEditFolderModal(false); setEditingFolder(null); }}
+                    className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-white/5"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary py-2 px-5 text-xs flex items-center gap-1.5"
+                  >
+                    <Check size={14} /> Guardar Cambios
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════════════════════════════════════════════════════════════
+          MODAL: EDITAR TRABAJO
+         ══════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {showEditWorkModal && editingWork && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-xl bg-[#0F172A] border border-white/10 rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto"
+            >
+              <button
+                onClick={() => { setShowEditWorkModal(false); setEditingWork(null); setEditingWorkFileObj(null); }}
+                className="absolute top-5 right-5 text-slate-400 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-[var(--color-brand-cyan)]/20 border border-[var(--color-brand-cyan)]/40 flex items-center justify-center text-[var(--color-brand-cyan)]">
+                  <Pencil size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Editar Trabajo</h3>
+                  <p className="text-xs text-brand-secondary">Actualiza los datos del entregable o tablero.</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleUpdateWork} className="flex flex-col gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Título del Trabajo <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editingWork.title}
+                    onChange={(e) => setEditingWork({ ...editingWork, title: e.target.value })}
+                    className={inputCls}
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Categoría
+                    </label>
+                    <input
+                      type="text"
+                      value={editingWork.category || 'Tablero'}
+                      onChange={(e) => setEditingWork({ ...editingWork, category: e.target.value })}
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Tipo de Fuente
+                    </label>
+                    <input
+                      type="text"
+                      disabled
+                      value={editingWork.sourceType === 'file' ? 'Archivo' : (editingWork.sourceType === 'github' ? 'Tablero GitHub' : 'Enlace Web')}
+                      className={`${inputCls} opacity-60 cursor-not-allowed`}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Descripción / Resumen
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={editingWork.description || ''}
+                    onChange={(e) => setEditingWork({ ...editingWork, description: e.target.value })}
+                    className={textareaCls}
+                  />
+                </div>
+
+                {/* Campos según tipo */}
+                {editingWork.sourceType === 'url' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      URL del Tablero / Enlace <span className="text-rose-400">*</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={editingWork.url || ''}
+                      onChange={(e) => setEditingWork({ ...editingWork, url: e.target.value })}
+                      className={inputCls}
+                      required
+                    />
+                  </div>
+                )}
+
+                {editingWork.sourceType === 'github' && (
+                  <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 flex flex-col gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300 mb-1">
+                        Repositorio (owner/repo)
+                      </label>
+                      <input
+                        type="text"
+                        value={editingWork.githubRepo || ''}
+                        onChange={(e) => setEditingWork({ ...editingWork, githubRepo: e.target.value })}
+                        className={inputCls}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-slate-300 mb-1">
+                          Rama (Branch)
+                        </label>
+                        <input
+                          type="text"
+                          value={editingWork.githubBranch || 'main'}
+                          onChange={(e) => setEditingWork({ ...editingWork, githubBranch: e.target.value })}
+                          className={inputCls}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-300 mb-1">
+                          Ruta del Archivo
+                        </label>
+                        <input
+                          type="text"
+                          value={editingWork.githubPath || 'index.html'}
+                          onChange={(e) => setEditingWork({ ...editingWork, githubPath: e.target.value })}
+                          className={inputCls}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {editingWork.sourceType === 'file' && (
+                  <div className="p-3.5 rounded-xl bg-[#131B2E] border border-white/10 flex flex-col gap-3">
+                    <div className="flex items-center justify-between text-xs text-slate-300">
+                      <span>Archivo actual: <strong className="text-white">{editingWork.fileName || 'archivo'}</strong></span>
+                      <span className="text-slate-400 font-mono">{editingWork.fileSize || ''}</span>
+                    </div>
+
+                    <label className="block text-xs font-medium text-slate-400 mt-1">
+                      Reemplazar archivo (opcional):
+                    </label>
+                    <input
+                      type="file"
+                      onChange={handleEditFileChange}
+                      accept=".pdf,.xlsx,.xls,.txt,.csv,.doc,.docx,.zip,.html,.png,.jpg,.jpeg"
+                      className="text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[var(--color-brand-cyan)]/20 file:text-[var(--color-brand-cyan)] hover:file:bg-[var(--color-brand-cyan)]/30 cursor-pointer"
+                    />
+
+                    {editingWorkFileObj && (
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-[var(--color-brand-cyan)]/10 border border-[var(--color-brand-cyan)]/30 text-xs text-[var(--color-brand-cyan)]">
+                        <span className="flex items-center gap-1.5 font-medium truncate">
+                          <CheckCircle2 size={13} /> {editingWorkFileObj.name} ({editingWorkFileObj.size})
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-3 mt-4 pt-3 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => { setShowEditWorkModal(false); setEditingWork(null); setEditingWorkFileObj(null); }}
+                    className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-white/5"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUploading}
+                    className="btn-primary py-2 px-5 text-xs flex items-center gap-1.5"
+                  >
+                    {isUploading ? 'Guardando...' : <><Check size={14} /> Guardar Cambios</>}
                   </button>
                 </div>
               </form>
