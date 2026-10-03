@@ -473,9 +473,10 @@ app.get('/api/survey/export/responses', async (req, res) => {
         id, response_token, p1_seguimiento, p2_medio, p3_valoracion,
         p4_politico, p4_social, p4_economico, p4_religioso,
         p5_iglesia, p6_gobierno, p8_religion, p9_papa_lider,
-        p10_valores, p12_palabra, p13_edad, p14_genero,
+        p10_valores, p11_reflexion, p12_palabra, p13_edad, p14_genero,
         p15_provincia, p16_educacion, p17_politica,
-        duration_seconds, is_flagged_speeder, created_at
+        duration_seconds, is_flagged_speeder, created_at,
+        p7_memoria
       FROM survey_responses
       ${whereSql}
       ORDER BY id ASC

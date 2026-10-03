@@ -263,7 +263,7 @@ const EncuestaPapaDashboard = () => {
 
   // Exportar datos
   const handleExportResponses = () => {
-    if (statsData?.filteredResponses) {
+    if (statsData?.filteredResponses && statsData.filteredResponses.length > 0) {
       papaSurveyApi.downloadClientCsv(`respuestas_visita_papal_${Date.now()}.csv`, statsData.filteredResponses);
     } else {
       papaSurveyApi.exportResponsesCsv(filters);
