@@ -157,9 +157,20 @@ export const papaSurveyApi = {
     window.open(`${API_BASE_URL}/api/survey/export/responses?${query.toString()}`, '_blank');
   },
 
+  // Exportar respuestas Excel XLSX
+  exportResponsesExcel(filters = {}) {
+    const query = new URLSearchParams({ ...filters, format: 'xlsx' });
+    window.open(`${API_BASE_URL}/api/survey/export/responses?${query.toString()}`, '_blank');
+  },
+
   // Exportar sorteo CSV
   exportRaffleCsv() {
     window.open(`${API_BASE_URL}/api/survey/export/raffle`, '_blank');
+  },
+
+  // Exportar sorteo Excel XLSX
+  exportRaffleExcel() {
+    window.open(`${API_BASE_URL}/api/survey/export/raffle?format=xlsx`, '_blank');
   },
 
   // Descarga directa en navegador CSV

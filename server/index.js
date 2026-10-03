@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import pool, { testConnection } from './db.js';
+import XLSX from 'xlsx';
 
 dotenv.config();
 
@@ -464,7 +465,7 @@ app.post('/api/survey/raffle/draw-winner', async (req, res) => {
   }
 });
 
-// 5. Exportar Respuestas a CSV
+// 5. Exportar Respuestas a CSV o Excel (XLSX)
 app.get('/api/survey/export/responses', async (req, res) => {
   try {
     const { whereSql, params } = buildWhereClause(req.query);
@@ -476,7 +477,7 @@ app.get('/api/survey/export/responses', async (req, res) => {
         p10_valores, p11_reflexion, p12_palabra, p13_edad, p14_genero,
         p15_provincia, p16_educacion, p17_politica,
         duration_seconds, is_flagged_speeder, created_at,
-        p7_memoria
+        p7_memoria AS p7_pregunta_abierta
       FROM survey_responses
       ${whereSql}
       ORDER BY id ASC
@@ -487,14 +488,33 @@ app.get('/api/survey/export/responses', async (req, res) => {
       return res.status(404).send('No se encontraron respuestas con los filtros indicados.');
     }
 
+    const format = String(req.query.format || '').toLowerCase();
+    const timestamp = Date.now();
+
+    // Exportación en formato Microsoft Excel (.xlsx)
+    if (format === 'xlsx' || format === 'excel') {
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      worksheet['!cols'] = Object.keys(rows[0]).map(k => ({
+        wch: k === 'p7_pregunta_abierta' ? 55 : Math.max(k.length + 3, 12)
+      }));
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Respuestas');
+      const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=respuestas_visita_papal_${timestamp}.xlsx`);
+      return res.send(buffer);
+    }
+
+    // Exportación en formato CSV estándar
     const headers = Object.keys(rows[0]);
     const csvRows = [
       headers.join(';'),
-      ...rows.map(r => headers.map(h => `"${String(r[h] ?? '').replace(/"/g, '""')}"`).join(';'))
+      ...rows.map(r => headers.map(h => `"${String(r[h] ?? '').replace(/\r\n/g, ' ').replace(/\n/g, ' ').replace(/"/g, '""')}"`).join(';'))
     ];
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename=respuestas_visita_papal_${Date.now()}.csv`);
+    res.setHeader('Content-Disposition', `attachment; filename=respuestas_visita_papal_${timestamp}.csv`);
     res.send('\uFEFF' + csvRows.join('\r\n'));
   } catch (error) {
     console.error('Error exporting responses:', error);
@@ -502,7 +522,7 @@ app.get('/api/survey/export/responses', async (req, res) => {
   }
 });
 
-// 6. Exportar Sorteo a CSV
+// 6. Exportar Sorteo a CSV o Excel (XLSX)
 app.get('/api/survey/export/raffle', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT id, response_token, dni, email, participated_at FROM raffle_participants ORDER BY id ASC');
@@ -510,14 +530,37 @@ app.get('/api/survey/export/raffle', async (req, res) => {
       return res.status(404).send('No hay participantes registrados.');
     }
 
+    const format = String(req.query.format || '').toLowerCase();
+    const timestamp = Date.now();
+
+    // Exportación en formato Microsoft Excel (.xlsx)
+    if (format === 'xlsx' || format === 'excel') {
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      worksheet['!cols'] = [
+        { wch: 8 },
+        { wch: 38 },
+        { wch: 15 },
+        { wch: 30 },
+        { wch: 22 }
+      ];
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Participantes');
+      const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=participantes_sorteo_${timestamp}.xlsx`);
+      return res.send(buffer);
+    }
+
+    // Exportación en formato CSV estándar
     const headers = ['id', 'response_token', 'dni', 'email', 'participated_at'];
     const csvRows = [
       headers.join(';'),
-      ...rows.map(r => headers.map(h => `"${String(r[h] ?? '').replace(/"/g, '""')}"`).join(';'))
+      ...rows.map(r => headers.map(h => `"${String(r[h] ?? '').replace(/\r\n/g, ' ').replace(/\n/g, ' ').replace(/"/g, '""')}"`).join(';'))
     ];
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename=participantes_sorteo_${Date.now()}.csv`);
+    res.setHeader('Content-Disposition', `attachment; filename=participantes_sorteo_${timestamp}.csv`);
     res.send('\uFEFF' + csvRows.join('\r\n'));
   } catch (error) {
     console.error('Error exporting raffle:', error);

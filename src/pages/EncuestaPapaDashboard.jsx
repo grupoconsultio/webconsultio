@@ -261,17 +261,25 @@ const EncuestaPapaDashboard = () => {
     }
   };
 
-  // Exportar datos
-  const handleExportResponses = () => {
-    if (statsData?.filteredResponses && statsData.filteredResponses.length > 0) {
-      papaSurveyApi.downloadClientCsv(`respuestas_visita_papal_${Date.now()}.csv`, statsData.filteredResponses);
+  // Exportar datos (Excel XLSX o CSV)
+  const handleExportResponses = (format = 'xlsx') => {
+    if (format === 'xlsx') {
+      papaSurveyApi.exportResponsesExcel(filters);
     } else {
-      papaSurveyApi.exportResponsesCsv(filters);
+      if (statsData?.filteredResponses && statsData.filteredResponses.length > 0) {
+        papaSurveyApi.downloadClientCsv(`respuestas_visita_papal_${Date.now()}.csv`, statsData.filteredResponses);
+      } else {
+        papaSurveyApi.exportResponsesCsv(filters);
+      }
     }
   };
 
-  const handleExportRaffle = () => {
-    papaSurveyApi.exportRaffleCsv();
+  const handleExportRaffle = (format = 'xlsx') => {
+    if (format === 'xlsx') {
+      papaSurveyApi.exportRaffleExcel();
+    } else {
+      papaSurveyApi.exportRaffleCsv();
+    }
   };
 
   // Provincias disponibles según región
@@ -348,10 +356,20 @@ const EncuestaPapaDashboard = () => {
               {darkMode ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} className="text-slate-700" />}
             </button>
 
+            {/* Exportar Excel (.xlsx) */}
+            <button
+              onClick={() => handleExportResponses('xlsx')}
+              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 transition-all active:scale-95 cursor-pointer"
+              title="Descargar base de respuestas completa en formato Excel (.xlsx)"
+            >
+              <FileSpreadsheet size={14} /> Exportar Excel (.xlsx)
+            </button>
+
             {/* Exportar CSV */}
             <button
-              onClick={handleExportResponses}
-              className="px-3.5 py-1.5 rounded-xl bg-[#0284c7] hover:bg-[#0284c7]/90 text-white font-semibold text-xs flex items-center gap-1.5 shadow-lg shadow-[#0284c7]/20 transition-all active:scale-95"
+              onClick={() => handleExportResponses('csv')}
+              className="px-3 py-1.5 rounded-xl bg-[#0284c7] hover:bg-[#0284c7]/90 text-white font-semibold text-xs flex items-center gap-1.5 shadow-lg shadow-[#0284c7]/20 transition-all active:scale-95 cursor-pointer"
+              title="Descargar datos en formato CSV delimitado por punto y coma"
             >
               <Download size={14} /> Exportar CSV
             </button>
@@ -1295,10 +1313,11 @@ const EncuestaPapaDashboard = () => {
                     Total inscriptos: <strong className="text-white">{raffleTotal}</strong>
                   </span>
                   <button
-                    onClick={handleExportRaffle}
-                    className={`px-3 py-1.5 rounded-xl border ${theme.cardSubtle} text-xs font-semibold hover:border-white/30 flex items-center gap-1.5 transition-all`}
+                    onClick={() => handleExportRaffle('xlsx')}
+                    className={`px-3 py-1.5 rounded-xl border ${theme.cardSubtle} text-xs font-semibold hover:border-emerald-500/50 hover:text-emerald-400 flex items-center gap-1.5 transition-all cursor-pointer`}
+                    title="Exportar padrón de participantes en Excel (.xlsx)"
                   >
-                    <FileSpreadsheet size={14} /> Exportar Padrón
+                    <FileSpreadsheet size={14} className="text-emerald-400" /> Exportar Padrón (Excel)
                   </button>
                 </div>
               </div>
