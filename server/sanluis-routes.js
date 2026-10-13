@@ -57,10 +57,25 @@ function buildSanLuisWhere(query) {
 // 1. Health check
 router.get('/health', async (req, res) => {
   const dbStatus = await testSanLuisConnection();
+  let tables = [];
+  try {
+    const tRes = await dbSanLuis.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
+    for (const row of tRes.rows) {
+      try {
+        const cRes = await dbSanLuis.query(`SELECT COUNT(*) as count FROM "${row.table_name}"`);
+        tables.push({ name: row.table_name, count: parseInt(cRes.rows[0]?.count || 0, 10) });
+      } catch (err) {
+        tables.push({ name: row.table_name, error: err.message });
+      }
+    }
+  } catch (err) {
+    // ignore
+  }
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    database: dbStatus
+    database: dbStatus,
+    tables
   });
 });
 
