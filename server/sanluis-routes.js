@@ -71,11 +71,23 @@ router.get('/health', async (req, res) => {
   } catch (err) {
     // ignore
   }
+
+  let sampleRow = null;
+  let sampleSorteo = null;
+  try {
+    const sRes = await dbSanLuis.query('SELECT * FROM respuestas LIMIT 1');
+    sampleRow = sRes.rows[0] || null;
+    const sortRes = await dbSanLuis.query('SELECT * FROM sorteos LIMIT 1');
+    sampleSorteo = sortRes.rows[0] || null;
+  } catch (e) {}
+
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     database: dbStatus,
-    tables
+    tables,
+    sampleRow,
+    sampleSorteo
   });
 });
 
