@@ -11,6 +11,7 @@ import AdminLogin from './pages/AdminLogin';
 import Demos from './pages/Demos';
 import MapaIndicadores from './pages/MapaIndicadores';
 import EncuestaPapaDashboard from './pages/EncuestaPapaDashboard';
+import EncuestaSanLuisDashboard from './pages/EncuestaSanLuisDashboard';
 import { motion, useScroll, useSpring } from 'framer-motion';
 
 const ProtectedRoute = ({ children }) => {
@@ -74,6 +75,8 @@ function App() {
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/admin/encuesta-papa" element={<ProtectedRoute><EncuestaPapaDashboard /></ProtectedRoute>} />
         <Route path="/encuesta-papa" element={<EncuestaPapaDashboard />} />
+        <Route path="/admin/encuesta-san-luis" element={<ProtectedRoute><EncuestaSanLuisDashboard /></ProtectedRoute>} />
+        <Route path="/encuesta-san-luis" element={<EncuestaSanLuisDashboard />} />
         <Route path="/demos" element={<><Navbar /><Demos /><Footer /></>} />
         <Route path="/mapa" element={<ProtectedRoute><MapaIndicadores /></ProtectedRoute>} />
       </Routes>

@@ -86,6 +86,17 @@ const INITIAL_CLIENT_WORKS = [
     createdBy: 'grupoconsultio'
   },
   {
+    id: 'work-san-luis-2026',
+    clientFolderId: 'CIQNwadklAnSpJr0JM85',
+    title: 'Encuesta Provincial San Luis 2026',
+    description: 'Tablero de Inteligencia Territorial, evaluación de gestión, imágenes de dirigentes, intención de voto 2027 y auditoría de sorteo.',
+    sourceType: 'url',
+    url: '/admin/encuesta-san-luis',
+    category: 'Opinión Pública',
+    createdAt: new Date('2026-10-13').toISOString(),
+    createdBy: 'grupoconsultio'
+  },
+  {
     id: 'work-rio-cuarto-mapa',
     clientFolderId: 'FCSCePtNm4urAxAIMWUA',
     title: 'Encuesta Río Cuarto',

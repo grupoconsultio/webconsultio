@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import pool, { testConnection } from './db.js';
 import XLSX from 'xlsx';
+import sanLuisRouter from './sanluis-routes.js';
 
 dotenv.config();
 
@@ -822,6 +823,10 @@ app.post('/api/upload', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+// Rutas específicas para Encuesta San Luis 2026 (PostgreSQL)
+app.use('/api/san-luis', sanLuisRouter);
+
 
 // Servir archivos estáticos del frontend si existe la carpeta dist
 const possibleDistPaths = [
