@@ -46,15 +46,16 @@ function buildSanLuisWhere(query) {
     conditions.push(`laboral = $${params.length}`);
   }
 
+  // Filtrado de speeders: dur_s < 20 seg
   if (includeSpeeders === 'false' || includeSpeeders === false) {
-    conditions.push('(is_flagged_speeder = FALSE OR is_flagged_speeder IS NULL)');
+    conditions.push('(dur_s >= 20 OR dur_s IS NULL OR dur_s = 0)');
   }
 
   const whereSql = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   return { whereSql, params };
 }
 
-// 1. Health check
+// 1. Health check & Diagnóstico de BBDD
 router.get('/health', async (req, res) => {
   const dbStatus = await testSanLuisConnection();
   let tables = [];
@@ -72,22 +73,11 @@ router.get('/health', async (req, res) => {
     // ignore
   }
 
-  let sampleRow = null;
-  let sampleSorteo = null;
-  try {
-    const sRes = await dbSanLuis.query('SELECT * FROM respuestas LIMIT 1');
-    sampleRow = sRes.rows[0] || null;
-    const sortRes = await dbSanLuis.query('SELECT * FROM sorteos LIMIT 1');
-    sampleSorteo = sortRes.rows[0] || null;
-  } catch (e) {}
-
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     database: dbStatus,
-    tables,
-    sampleRow,
-    sampleSorteo
+    tables
   });
 });
 
@@ -100,10 +90,10 @@ router.get('/stats', async (req, res) => {
     const kpiSql = `
       SELECT 
         COUNT(*) as total_samples,
-        SUM(CASE WHEN is_flagged_speeder = TRUE THEN 1 ELSE 0 END) as speeders_count,
-        SUM(CASE WHEN is_flagged_speeder = FALSE OR is_flagged_speeder IS NULL THEN 1 ELSE 0 END) as valid_samples,
+        SUM(CASE WHEN dur_s > 0 AND dur_s < 20 THEN 1 ELSE 0 END) as speeders_count,
+        SUM(CASE WHEN dur_s >= 20 OR dur_s IS NULL OR dur_s = 0 THEN 1 ELSE 0 END) as valid_samples,
         ROUND(AVG(dur_s), 1) as avg_duration_seconds
-      FROM survey_responses_sanluis
+      FROM respuestas
       ${whereSql}
     `;
     const kpiRes = await dbSanLuis.query(kpiSql, params);
@@ -111,7 +101,7 @@ router.get('/stats', async (req, res) => {
 
     let totalRaffle = 0;
     try {
-      const raffleRes = await dbSanLuis.query('SELECT COUNT(*) as total_raffle FROM raffle_participants_sanluis');
+      const raffleRes = await dbSanLuis.query('SELECT COUNT(*) as total_raffle FROM sorteos');
       totalRaffle = parseInt(raffleRes.rows[0]?.total_raffle || 0, 10);
     } catch {
       // ignore
@@ -121,7 +111,7 @@ router.get('/stats', async (req, res) => {
     const getDistribution = async (col, labelMap = {}) => {
       const sql = `
         SELECT ${col} as val, COUNT(*) as count
-        FROM survey_responses_sanluis
+        FROM respuestas
         ${whereSql ? `${whereSql} AND ${col} IS NOT NULL AND ${col} != ''` : `WHERE ${col} IS NOT NULL AND ${col} != ''`}
         GROUP BY ${col}
         ORDER BY count DESC
@@ -160,7 +150,7 @@ router.get('/stats', async (req, res) => {
     const imagenDirigentes = await Promise.all(dirigentes.map(async (d) => {
       const sql = `
         SELECT ${d.key} as opinion, COUNT(*) as count
-        FROM survey_responses_sanluis
+        FROM respuestas
         ${whereSql ? `${whereSql} AND ${d.key} IS NOT NULL AND ${d.key} != ''` : `WHERE ${d.key} IS NOT NULL AND ${d.key} != ''`}
         GROUP BY ${d.key}
       `;
@@ -262,8 +252,8 @@ router.get('/raffle', async (req, res) => {
     const offset = (page - 1) * limit;
     const search = req.query.search ? `%${req.query.search.trim()}%` : null;
 
-    let countSql = 'SELECT COUNT(*) as total FROM raffle_participants_sanluis';
-    let dataSql = 'SELECT id, contacto, tipo, fecha, created_at FROM raffle_participants_sanluis';
+    let countSql = 'SELECT COUNT(*) as total FROM sorteos';
+    let dataSql = 'SELECT id, contacto, tipo, fecha, created_at FROM sorteos';
     const params = [];
 
     if (search) {
@@ -300,7 +290,7 @@ router.post('/raffle/draw-winner', async (req, res) => {
     const substitutesCount = Math.max(0, parseInt(req.body.substitutesCount || 2, 10));
     const totalNeeded = winnersCount + substitutesCount;
 
-    const countRes = await dbSanLuis.query('SELECT COUNT(*) as total FROM raffle_participants_sanluis');
+    const countRes = await dbSanLuis.query('SELECT COUNT(*) as total FROM sorteos');
     const total = parseInt(countRes.rows[0]?.total || 0, 10);
 
     if (total === 0) {
@@ -309,7 +299,7 @@ router.post('/raffle/draw-winner', async (req, res) => {
 
     const selectSql = `
       SELECT id, contacto, tipo, fecha, created_at
-      FROM raffle_participants_sanluis
+      FROM sorteos
       ORDER BY RANDOM()
       LIMIT $1
     `;
@@ -345,7 +335,7 @@ router.post('/raffle/draw-winner', async (req, res) => {
 router.get('/export/responses', async (req, res) => {
   try {
     const { whereSql, params } = buildSanLuisWhere(req.query);
-    const sql = `SELECT * FROM survey_responses_sanluis ${whereSql} ORDER BY id ASC`;
+    const sql = `SELECT * FROM respuestas ${whereSql} ORDER BY id ASC`;
     const result = await dbSanLuis.query(sql, params);
     const rows = result.rows;
 
@@ -390,7 +380,7 @@ router.get('/export/responses', async (req, res) => {
 // 6. Exportar Sorteo (Excel o CSV)
 router.get('/export/raffle', async (req, res) => {
   try {
-    const result = await dbSanLuis.query('SELECT id, contacto, tipo, fecha, created_at FROM raffle_participants_sanluis ORDER BY id ASC');
+    const result = await dbSanLuis.query('SELECT id, contacto, tipo, fecha, created_at FROM sorteos ORDER BY id ASC');
     const rows = result.rows;
 
     if (rows.length === 0) {
@@ -430,6 +420,8 @@ router.get('/export/raffle', async (req, res) => {
 router.post('/submit', async (req, res) => {
   try {
     const b = req.body;
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
+    const userAgent = req.headers['user-agent'] || null;
 
     // Caso A: Registro en Sorteo
     if (b.type === 'sorteo' || b.contacto) {
@@ -442,35 +434,34 @@ router.post('/submit', async (req, res) => {
       }
 
       await dbSanLuis.query(
-        'INSERT INTO raffle_participants_sanluis (contacto, tipo, fecha) VALUES ($1, $2, $3) ON CONFLICT (contacto) DO NOTHING',
-        [contacto, tipo, fecha]
+        'INSERT INTO sorteos (contacto, tipo, fecha, ip, user_agent) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING',
+        [contacto, tipo, fecha, clientIp, userAgent]
       );
       return res.json({ success: true, message: 'Inscripción en sorteo registrada con éxito' });
     }
 
     // Caso B: Respuesta de la encuesta
     const dur_s = parseInt(b.dur_s || 0, 10);
-    const isSpeeder = dur_s > 0 && dur_s < 20;
 
     const insertSql = `
-      INSERT INTO survey_responses_sanluis (
-        sid, version, ts_inicio, ts_fin, dur_s,
+      INSERT INTO respuestas (
+        sid, version, ts_inicio, ts_fin, dur_s, repetido, hp,
         p1, p2, p2_otro, p3, p4,
-        p5_poggi, p5_alberto, p5_adolfo, p5_frontera, p5_abdala,
-        p6, p6_otro, p7, p8, p9, p10,
+        p5_poggi, p5_alberto, p5_adolfo, p5_frontera, p5_abdala, orden_p5,
+        p6, p6_otro, orden_p6, p7, p8, p9, p10,
         p11, p12, p12_otro,
         genero, edad, localidad, departamento, localidad_libre, laboral,
-        is_flagged_speeder,
-        utm_source, utm_medium, utm_campaign, utm_content, utm_term, fbclid, referrer, movil, tiempos
+        utm_source, utm_medium, utm_campaign, utm_content, utm_term, fbclid, referrer, movil, ancho, tiempos, payload_raw,
+        ip, user_agent
       ) VALUES (
-        $1, $2, $3, $4, $5,
-        $6, $7, $8, $9, $10,
-        $11, $12, $13, $14, $15,
-        $16, $17, $18, $19, $20, $21,
-        $22, $23, $24,
-        $25, $26, $27, $28, $29, $30,
-        $31,
-        $32, $33, $34, $35, $36, $37, $38, $39, $40
+        $1, $2, $3, $4, $5, $6, $7,
+        $8, $9, $10, $11, $12,
+        $13, $14, $15, $16, $17, $18,
+        $19, $20, $21, $22, $23, $24, $25,
+        $26, $27, $28,
+        $29, $30, $31, $32, $33, $34,
+        $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45,
+        $46, $47
       )
       ON CONFLICT (sid) DO NOTHING
     `;
@@ -481,6 +472,8 @@ router.post('/submit', async (req, res) => {
       b.ts_inicio || null,
       b.ts_fin || new Date().toISOString(),
       dur_s,
+      parseInt(b.repetido || 0, 10),
+      b.hp || '',
       b.p1 || null,
       b.p2 || null,
       b.p2_otro || null,
@@ -491,8 +484,10 @@ router.post('/submit', async (req, res) => {
       b.p5_adolfo || null,
       b.p5_frontera || null,
       b.p5_abdala || null,
+      b.orden_p5 || null,
       b.p6 || null,
       b.p6_otro || null,
+      b.orden_p6 || null,
       b.p7 || null,
       b.p8 || null,
       b.p9 || null,
@@ -506,7 +501,6 @@ router.post('/submit', async (req, res) => {
       b.departamento || null,
       b.localidad_libre || null,
       b.laboral || null,
-      isSpeeder,
       b.utm_source || null,
       b.utm_medium || null,
       b.utm_campaign || null,
@@ -515,7 +509,11 @@ router.post('/submit', async (req, res) => {
       b.fbclid || null,
       b.referrer || null,
       parseInt(b.movil || 0, 10),
-      b.tiempos ? JSON.stringify(b.tiempos) : null
+      parseInt(b.ancho || 0, 10),
+      b.tiempos ? JSON.stringify(b.tiempos) : null,
+      JSON.stringify(b),
+      clientIp,
+      userAgent
     ];
 
     await dbSanLuis.query(insertSql, values);

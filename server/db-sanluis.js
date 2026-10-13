@@ -236,7 +236,7 @@ export async function testSanLuisConnection() {
   try {
     const p = await getActiveSanLuisPool();
     const client = await p.connect();
-    const res = await client.query('SELECT COUNT(*) as count FROM survey_responses_sanluis');
+    const res = await client.query('SELECT COUNT(*) as count FROM respuestas');
     client.release();
     return {
       ok: true,
