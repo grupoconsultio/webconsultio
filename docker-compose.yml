@@ -16,6 +16,11 @@ services:
       - DB_USER=${DB_USER:-mysql}
       - DB_PASSWORD=${DB_PASSWORD:-msodtssapus5soxz}
       - DB_NAME=${DB_NAME:-mysql}
+      - DB_SANLUIS_HOST=${DB_SANLUIS_HOST:-consuldatio-bbddsanluis-hshlgz}
+      - DB_SANLUIS_PORT=${DB_SANLUIS_PORT:-5432}
+      - DB_SANLUIS_USER=${DB_SANLUIS_USER:-postgres}
+      - DB_SANLUIS_PASSWORD=${DB_SANLUIS_PASSWORD}
+      - DB_SANLUIS_NAME=${DB_SANLUIS_NAME:-postgres}
       - CORS_ORIGIN=*
     extra_hosts:
       - "host.docker.internal:host-gateway"
