@@ -97,6 +97,17 @@ const INITIAL_CLIENT_WORKS = [
     createdBy: 'grupoconsultio'
   },
   {
+    id: 'work-rio-tercero-2026',
+    clientFolderId: 'CIQNwadklAnSpJr0JM85',
+    title: 'Encuesta Presencial Río Tercero 2026',
+    description: 'Tablero de Inteligencia Territorial presencial: gestiones, dirigentes, problemáticas de Río Tercero y escenarios electorales.',
+    sourceType: 'url',
+    url: '/admin/encuesta-rio-tercero',
+    category: 'Opinión Pública',
+    createdAt: new Date('2026-10-17').toISOString(),
+    createdBy: 'grupoconsultio'
+  },
+  {
     id: 'work-rio-cuarto-mapa',
     clientFolderId: 'FCSCePtNm4urAxAIMWUA',
     title: 'Encuesta Río Cuarto',

@@ -12,6 +12,7 @@ import Demos from './pages/Demos';
 import MapaIndicadores from './pages/MapaIndicadores';
 import EncuestaPapaDashboard from './pages/EncuestaPapaDashboard';
 import EncuestaSanLuisDashboard from './pages/EncuestaSanLuisDashboard';
+import EncuestaRioTerceroDashboard from './pages/EncuestaRioTerceroDashboard';
 import { motion, useScroll, useSpring } from 'framer-motion';
 
 const ProtectedRoute = ({ children }) => {
@@ -77,6 +78,8 @@ function App() {
         <Route path="/encuesta-papa" element={<EncuestaPapaDashboard />} />
         <Route path="/admin/encuesta-san-luis" element={<ProtectedRoute><EncuestaSanLuisDashboard /></ProtectedRoute>} />
         <Route path="/encuesta-san-luis" element={<EncuestaSanLuisDashboard />} />
+        <Route path="/admin/encuesta-rio-tercero" element={<ProtectedRoute><EncuestaRioTerceroDashboard /></ProtectedRoute>} />
+        <Route path="/encuesta-rio-tercero" element={<EncuestaRioTerceroDashboard />} />
         <Route path="/demos" element={<><Navbar /><Demos /><Footer /></>} />
         <Route path="/mapa" element={<ProtectedRoute><MapaIndicadores /></ProtectedRoute>} />
       </Routes>
