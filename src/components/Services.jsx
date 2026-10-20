@@ -107,12 +107,13 @@ const services = [
 
 const Services = () => {
   const [activeTab, setActiveTab] = useState(services[0].id);
+  const [mobileExpandedId, setMobileExpandedId] = useState(null);
 
   const activeService = services.find(s => s.id === activeTab) || services[0];
   const ActiveIcon = activeService.icon;
 
-  const handleSolicitarInfo = () => {
-    window.dispatchEvent(new CustomEvent('select-solution', { detail: activeService.title }));
+  const handleSolicitarInfo = (serviceTitle = activeService.title) => {
+    window.dispatchEvent(new CustomEvent('select-solution', { detail: serviceTitle }));
     document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -138,11 +139,110 @@ const Services = () => {
           </div>
         </div>
 
-        {/* Olivia Signature Interactive Tabbed Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 mb-0 items-start">
+        {/* ══════════════════════════════════════════════════════════════
+            1. VISTA MÓVIL (< lg): ACCORDION INTERACTIVO
+            Muestra únicamente las 6 opciones y se despliega la tarjeta
+            justo debajo de la opción que el usuario presione.
+           ══════════════════════════════════════════════════════════════ */}
+        <div className="block lg:hidden flex flex-col gap-3 mb-4">
+          <span className="text-[11px] font-display font-bold tracking-[0.25em] text-white/40 uppercase mb-1 pl-1">
+            SELECCIONA UNA SOLUCIÓN //
+          </span>
+
+          {services.map((service) => {
+            const isExpanded = mobileExpandedId === service.id;
+            const ServiceIcon = service.icon;
+
+            return (
+              <div 
+                key={service.id} 
+                className={`rounded-2xl border transition-all duration-300 overflow-hidden ${
+                  isExpanded 
+                    ? 'bg-white/[0.04] border-[var(--color-brand-cyan)]/50 shadow-[0_0_25px_rgba(0,229,255,0.12)]' 
+                    : 'bg-white/[0.02] border-white/5 hover:border-white/20'
+                }`}
+              >
+                {/* Botón de la opción */}
+                <button
+                  onClick={() => setMobileExpandedId(isExpanded ? null : service.id)}
+                  className="w-full text-left p-4 sm:p-5 flex items-center justify-between group cursor-pointer"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <span className={`text-xs font-mono font-bold transition-colors ${isExpanded ? 'text-[var(--color-brand-cyan)]' : 'text-white/40'}`}>
+                      {service.number}
+                    </span>
+                    <span className={`text-sm sm:text-base font-display font-bold uppercase tracking-tight transition-colors ${isExpanded ? 'text-white' : 'text-white/80'}`}>
+                      {service.title}
+                    </span>
+                  </div>
+                  <ChevronRight 
+                    size={18} 
+                    className={`transition-transform duration-300 flex-shrink-0 ${
+                      isExpanded 
+                        ? 'text-[var(--color-brand-cyan)] rotate-90' 
+                        : 'text-white/30'
+                    }`} 
+                  />
+                </button>
+
+                {/* Tarjeta de información desplegable debajo de la opción */}
+                <AnimatePresence initial={false}>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.35, ease: "easeOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="p-5 pt-2 border-t border-white/10 bg-black/40">
+                        <div className="flex items-center gap-3 mb-4 mt-2">
+                          <div className="w-11 h-11 rounded-xl bg-[var(--color-brand-cyan)]/10 border border-[var(--color-brand-cyan)]/30 flex items-center justify-center text-[var(--color-brand-cyan)] flex-shrink-0">
+                            <ServiceIcon size={22} />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-display font-bold tracking-[0.2em] text-[var(--color-brand-cyan)] uppercase block">
+                              {service.subtitle}
+                            </span>
+                          </div>
+                        </div>
+
+                        <p className="text-sm text-white/80 leading-relaxed font-sans mb-5">
+                          {service.fullDesc}
+                        </p>
+
+                        <div className="space-y-2.5 mb-6 pt-4 border-t border-white/10">
+                          {service.highlights.map((h, i) => (
+                            <div key={i} className="flex items-start gap-2.5 text-xs text-white/70">
+                              <CheckCircle2 size={15} className="text-[var(--color-brand-cyan)] mt-0.5 flex-shrink-0" />
+                              <span>{h}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <button
+                          onClick={() => handleSolicitarInfo(service.title)}
+                          className="btn-primary w-full text-xs py-3.5 px-6 flex items-center justify-center gap-2 group cursor-pointer shadow-[0_0_20px_rgba(255,255,255,0.15)]"
+                        >
+                          <span>Solicitar Información</span>
+                          <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════
+            2. VISTA ESCRITORIO (>= lg): LAYOUT SIDE-BY-SIDE INTERACTIVO
+           ══════════════════════════════════════════════════════════════ */}
+        <div className="hidden lg:grid grid-cols-12 gap-8 lg:gap-14 mb-0 items-start">
           
           {/* Left Column: Active Service Details Card */}
-          <div className="lg:col-span-7">
+          <div className="col-span-7">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeService.id}
@@ -190,7 +290,7 @@ const Services = () => {
                 {/* CTA Action Button: Only Solicitar Información, taking user to Agendar Reunión */}
                 <div className="pt-2">
                   <button
-                    onClick={handleSolicitarInfo}
+                    onClick={() => handleSolicitarInfo(activeService.title)}
                     className="btn-primary text-xs md:text-sm py-3.5 px-8 flex items-center gap-2 group cursor-pointer shadow-[0_0_20px_rgba(255,255,255,0.15)]"
                   >
                     <span>Solicitar Información</span>
@@ -205,7 +305,7 @@ const Services = () => {
           </div>
 
           {/* Right Column: Olivia-style Vertical Interactive Tabs */}
-          <div className="lg:col-span-5 flex flex-col gap-3">
+          <div className="col-span-5 flex flex-col gap-3">
             <span className="text-[11px] font-display font-bold tracking-[0.25em] text-white/40 uppercase mb-2 pl-2">
               SELECCIONA UNA SOLUCIÓN //
             </span>

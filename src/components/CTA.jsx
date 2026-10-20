@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowUpRight, Mail, Calendar, CheckCircle2, Phone, MessageSquare, Sparkles } from 'lucide-react';
+import { ArrowUpRight, Mail, Calendar, CheckCircle2, Phone, MessageSquare, Sparkles, Loader2 } from 'lucide-react';
 
 const solutionsList = [
   'Estudios de Opinión y Encuestas',
@@ -83,6 +83,9 @@ const CTA = () => {
     if (!meetingData.name || !meetingData.phone || !meetingData.email) return;
 
     setIsSubmitting(true);
+    // Centrar la vista inmediatamente a la altura del formulario para ver el procesamiento
+    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
     const payload = {
       id: 'reunion_' + Date.now(),
       type: 'reunion',
@@ -99,6 +102,12 @@ const CTA = () => {
 
     setIsSubmitting(false);
     setSuccess(true);
+
+    // Reposicionar al centro exacto del mensaje de éxito
+    setTimeout(() => {
+      document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+
     setTimeout(() => {
       setSuccess(false);
       setFormMode(null);
@@ -109,7 +118,7 @@ const CTA = () => {
         phone: '',
         email: ''
       });
-    }, 4000);
+    }, 6000);
   };
 
   const handleContactSubmit = async (e) => {
@@ -117,6 +126,9 @@ const CTA = () => {
     if (!contactData.name || !contactData.phone || !contactData.email || !contactData.reason) return;
 
     setIsSubmitting(true);
+    // Centrar la vista inmediatamente a la altura del formulario para ver el procesamiento
+    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
     const payload = {
       id: 'contacto_' + Date.now(),
       type: 'contacto',
@@ -133,6 +145,12 @@ const CTA = () => {
 
     setIsSubmitting(false);
     setSuccess(true);
+
+    // Reposicionar al centro exacto del mensaje de éxito
+    setTimeout(() => {
+      document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+
     setTimeout(() => {
       setSuccess(false);
       setFormMode(null);
@@ -142,7 +160,7 @@ const CTA = () => {
         email: '',
         reason: ''
       });
-    }, 4000);
+    }, 6000);
   };
 
   return (
@@ -305,10 +323,19 @@ const CTA = () => {
                   <button 
                     type="submit" 
                     disabled={isSubmitting}
-                    className="flex-1 btn-primary py-3 text-xs flex items-center justify-center gap-2"
+                    className="flex-1 btn-primary py-3 text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                   >
-                    <span>{isSubmitting ? 'Enviando...' : 'Confirmar Solicitud'}</span>
-                    <ArrowUpRight size={15} />
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 size={15} className="animate-spin text-black" />
+                        <span>Enviando solicitud...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Confirmar Solicitud</span>
+                        <ArrowUpRight size={15} />
+                      </>
+                    )}
                   </button>
                 </div>
               </motion.form>
@@ -409,10 +436,19 @@ const CTA = () => {
                   <button 
                     type="submit" 
                     disabled={isSubmitting}
-                    className="flex-1 btn-primary py-3 text-xs flex items-center justify-center gap-2"
+                    className="flex-1 btn-primary py-3 text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                   >
-                    <span>{isSubmitting ? 'Enviando...' : 'Enviar Mensaje'}</span>
-                    <ArrowUpRight size={15} />
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 size={15} className="animate-spin text-black" />
+                        <span>Enviando mensaje...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Enviar Mensaje</span>
+                        <ArrowUpRight size={15} />
+                      </>
+                    )}
                   </button>
                 </div>
               </motion.form>
