@@ -895,20 +895,31 @@ app.post('/api/contact', async (req, res) => {
           to: adminEmail,
           subject: `🔔 Nueva Solicitud de ${newContact.type}: ${newContact.name}`,
           html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #fafafa;">
-              <h2 style="color: #0A0A0A; border-bottom: 2px solid #00E5FF; padding-bottom: 10px;">Nueva Solicitud en Grupo Consultio</h2>
-              <p>Has recibido una nueva solicitud desde la página web:</p>
-              <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                <tr><td style="padding: 8px; font-weight: bold; width: 140px;">Tipo:</td><td style="padding: 8px;">${newContact.type}</td></tr>
-                <tr><td style="padding: 8px; font-weight: bold;">Nombre / Organización:</td><td style="padding: 8px;">${newContact.name}</td></tr>
-                <tr><td style="padding: 8px; font-weight: bold;">Teléfono / WhatsApp:</td><td style="padding: 8px;"><a href="https://wa.me/${newContact.phone.replace(/[^0-9]/g, '')}">${newContact.phone}</a></td></tr>
-                <tr><td style="padding: 8px; font-weight: bold;">Correo:</td><td style="padding: 8px;"><a href="mailto:${newContact.email}">${newContact.email}</a></td></tr>
-                ${newContact.solution ? `<tr><td style="padding: 8px; font-weight: bold;">Solución de interés:</td><td style="padding: 8px;">${newContact.solution}</td></tr>` : ''}
-                ${newContact.solutionDetail ? `<tr><td style="padding: 8px; font-weight: bold;">Detalle opcional:</td><td style="padding: 8px;">${newContact.solutionDetail}</td></tr>` : ''}
-                ${newContact.reason ? `<tr><td style="padding: 8px; font-weight: bold;">Motivo / Consulta:</td><td style="padding: 8px;">${newContact.reason}</td></tr>` : ''}
-                <tr><td style="padding: 8px; font-weight: bold;">Fecha:</td><td style="padding: 8px;">${new Date().toLocaleString('es-AR')}</td></tr>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e0e0e0; border-radius: 14px; background-color: #fafafa;">
+              <table style="width: 100%; margin-bottom: 16px;">
+                <tr>
+                  <td style="width: 50px; vertical-align: middle;">
+                    <img src="https://grupoconsultio.com/favicon.png" width="44" height="44" style="border-radius: 50%; display: block;" alt="Grupo Consultio" />
+                  </td>
+                  <td style="vertical-align: middle; padding-left: 10px;">
+                    <strong style="color: #0A0A0A; font-size: 16px; display: block; letter-spacing: 0.5px;">GRUPO CONSULTIO</strong>
+                    <span style="color: #777777; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;">Notificación Web</span>
+                  </td>
+                </tr>
               </table>
-              <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 12px; color: #777;">
+              <h2 style="color: #0A0A0A; border-bottom: 2px solid #00E5FF; padding-bottom: 10px; font-size: 18px; margin-top: 5px;">Nueva Solicitud: ${newContact.type}</h2>
+              <p style="color: #444444; font-size: 14px;">Has recibido una nueva solicitud desde la página web:</p>
+              <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px;">
+                <tr><td style="padding: 8px; font-weight: bold; width: 140px; color: #555;">Tipo:</td><td style="padding: 8px; font-weight: bold; color: #00A3B8;">${newContact.type}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold; color: #555;">Nombre / Org:</td><td style="padding: 8px; font-weight: bold; color: #111;">${newContact.name}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold; color: #555;">Teléfono / WhatsApp:</td><td style="padding: 8px;"><a href="https://wa.me/${newContact.phone.replace(/[^0-9]/g, '')}" style="color: #25D366; font-weight: bold; text-decoration: none;">💬 ${newContact.phone} (Abrir Chat)</a></td></tr>
+                <tr><td style="padding: 8px; font-weight: bold; color: #555;">Correo:</td><td style="padding: 8px;"><a href="mailto:${newContact.email}" style="color: #0070F3; text-decoration: none;">${newContact.email}</a></td></tr>
+                ${newContact.solution ? `<tr><td style="padding: 8px; font-weight: bold; color: #555;">Solución:</td><td style="padding: 8px; color: #111;">${newContact.solution}</td></tr>` : ''}
+                ${newContact.solutionDetail ? `<tr><td style="padding: 8px; font-weight: bold; color: #555;">Detalle opcional:</td><td style="padding: 8px; color: #111;">${newContact.solutionDetail}</td></tr>` : ''}
+                ${newContact.reason ? `<tr><td style="padding: 8px; font-weight: bold; color: #555;">Consulta / Motivo:</td><td style="padding: 8px; color: #111;">${newContact.reason}</td></tr>` : ''}
+                <tr><td style="padding: 8px; font-weight: bold; color: #555;">Fecha:</td><td style="padding: 8px; color: #777;">${new Date().toLocaleString('es-AR')}</td></tr>
+              </table>
+              <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 11px; color: #888;">
                 Notificación automática enviada desde Grupo Consultio Web.
               </div>
             </div>
@@ -926,20 +937,32 @@ app.post('/api/contact', async (req, res) => {
           to: newContact.email,
           subject: `Hemos recibido tu solicitud | Grupo Consultio`,
           html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border-radius: 12px; background-color: #0A0A0A; color: #ffffff;">
-              <h2 style="color: #ffffff; margin-top: 0;">¡Hola, ${newContact.name}!</h2>
-              <p style="color: #cccccc; line-height: 1.6;">
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border-radius: 14px; background-color: #0A0A0A; color: #ffffff; border: 1px solid #222222;">
+              <table style="width: 100%; margin-bottom: 24px;">
+                <tr>
+                  <td style="width: 50px; vertical-align: middle;">
+                    <img src="https://grupoconsultio.com/favicon.png" width="46" height="46" style="border-radius: 50%; display: block;" alt="Grupo Consultio" />
+                  </td>
+                  <td style="vertical-align: middle; padding-left: 12px;">
+                    <strong style="color: #ffffff; font-size: 17px; display: block; letter-spacing: 1px;">GRUPO CONSULTIO</strong>
+                    <span style="color: #00E5FF; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; font-weight: bold;">Consultoría Estratégica & Analítica</span>
+                  </td>
+                </tr>
+              </table>
+
+              <h2 style="color: #ffffff; margin-top: 0; font-size: 20px;">¡Hola, ${newContact.name}!</h2>
+              <p style="color: #cccccc; line-height: 1.6; font-size: 15px;">
                 Te confirmamos que hemos recibido tu solicitud de <strong>${newContact.type.toLowerCase()}</strong> en Grupo Consultio.
               </p>
-              <p style="color: #cccccc; line-height: 1.6;">
+              <p style="color: #cccccc; line-height: 1.6; font-size: 15px;">
                 Uno de nuestros consultores especializados se pondrá en contacto a la brevedad vía WhatsApp o correo electrónico para coordinar los próximos pasos.
               </p>
-              <div style="background-color: #161616; padding: 15px; border-radius: 8px; border-left: 4px solid #00E5FF; margin: 20px 0;">
+              <div style="background-color: #141414; padding: 16px; border-radius: 10px; border-left: 3px solid #00E5FF; margin: 24px 0;">
                 <p style="margin: 0; color: #aaaaaa; font-size: 13px;">
-                  ${newContact.type === 'Reunión' ? `Solución seleccionada: <strong>${newContact.solution}</strong>` : 'Tu consulta ya está siendo evaluada por nuestro equipo.'}
+                  ${newContact.type === 'Reunión' ? `Solución seleccionada: <strong style="color: #ffffff;">${newContact.solution}</strong>` : 'Tu consulta ya está siendo evaluada por nuestro equipo.'}
                 </p>
               </div>
-              <p style="color: #888888; font-size: 13px; line-height: 1.5;">
+              <p style="color: #888888; font-size: 12px; line-height: 1.6; margin-top: 25px; border-top: 1px solid #222222; padding-top: 15px;">
                 Grupo Consultio — Consultoría Estratégica & Analítica<br/>
                 <a href="https://grupoconsultio.com" style="color: #00E5FF; text-decoration: none;">grupoconsultio.com</a>
               </p>
@@ -1063,10 +1086,17 @@ app.post('/api/newsletter/broadcast', async (req, res) => {
           subject: subject,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 30px; border-radius: 14px; background-color: #0A0A0A; color: #ffffff; border: 1px solid #222222;">
-              <div style="border-bottom: 2px solid #00E5FF; padding-bottom: 15px; margin-bottom: 25px;">
-                <span style="font-size: 11px; letter-spacing: 2px; color: #00E5FF; text-transform: uppercase; font-weight: bold;">GRUPO CONSULTIO // INSIGHTS & REPORTES</span>
-                <h1 style="color: #ffffff; margin: 10px 0 0 0; font-size: 22px;">${title || subject}</h1>
-              </div>
+              <table style="width: 100%; border-bottom: 2px solid #00E5FF; padding-bottom: 15px; margin-bottom: 25px;">
+                <tr>
+                  <td style="width: 48px; vertical-align: middle;">
+                    <img src="https://grupoconsultio.com/favicon.png" width="44" height="44" style="border-radius: 50%; display: block;" alt="Grupo Consultio" />
+                  </td>
+                  <td style="vertical-align: middle; padding-left: 12px;">
+                    <span style="font-size: 11px; letter-spacing: 2px; color: #00E5FF; text-transform: uppercase; font-weight: bold; display: block;">GRUPO CONSULTIO // INSIGHTS & REPORTES</span>
+                    <h1 style="color: #ffffff; margin: 4px 0 0 0; font-size: 20px;">${title || subject}</h1>
+                  </td>
+                </tr>
+              </table>
 
               <div style="color: #dddddd; line-height: 1.7; font-size: 15px; margin-bottom: 30px; white-space: pre-wrap;">
                 ${content.replace(/\n/g, '<br/>')}
