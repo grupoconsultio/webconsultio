@@ -13,7 +13,11 @@ import MapaIndicadores from './pages/MapaIndicadores';
 import EncuestaPapaDashboard from './pages/EncuestaPapaDashboard';
 import EncuestaSanLuisDashboard from './pages/EncuestaSanLuisDashboard';
 import EncuestaRioTerceroDashboard from './pages/EncuestaRioTerceroDashboard';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import { motion, useScroll, useSpring } from 'framer-motion';
+
+import Lenis from 'lenis';
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = sessionStorage.getItem('adminAuth') === '1';
@@ -41,24 +45,39 @@ const MainLanding = () => {
     restDelta: 0.001
   });
 
+  // Olivia-style Smooth Scroll with Lenis
+  React.useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.15,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      wheelMultiplier: 0.9,
+    });
+
+    function raf(time) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    const rafId = requestAnimationFrame(raf);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      lenis.destroy();
+    };
+  }, []);
+
   return (
     <>
       <motion.div
-        className="fixed top-0 left-0 right-0 h-1 bg-[var(--color-brand-cyan)] z-[60] origin-left"
+        className="fixed top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[var(--color-brand-cyan)] to-white z-[60] origin-left shadow-[0_0_10px_rgba(0,229,255,0.8)]"
         style={{ scaleX }}
       />
       <Navbar />
       <main>
         <Hero />
         <About />
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 1 }}
-          viewport={{ once: true }}
-        >
-          <Services />
-        </motion.div>
+        <Services />
         <CTA />
       </main>
       <Footer />
@@ -82,6 +101,8 @@ function App() {
         <Route path="/encuesta-rio-tercero" element={<EncuestaRioTerceroDashboard />} />
         <Route path="/demos" element={<><Navbar /><Demos /><Footer /></>} />
         <Route path="/mapa" element={<ProtectedRoute><MapaIndicadores /></ProtectedRoute>} />
+        <Route path="/terminos" element={<><Navbar /><TermsOfService /><Footer /></>} />
+        <Route path="/privacidad" element={<><Navbar /><PrivacyPolicy /><Footer /></>} />
       </Routes>
 
       {/* Global Background visual flair */}

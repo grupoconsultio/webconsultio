@@ -37,7 +37,12 @@ import {
   Check,
   AlertCircle,
   Pencil,
-  AlertTriangle
+  AlertTriangle,
+  Mail,
+  Send,
+  Phone,
+  MessageSquare,
+  Copy
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -133,6 +138,21 @@ const Admin = () => {
   const [userName, setUserName]           = useState('grupoconsultio');
   const [appUsers, setAppUsers]           = useState([]);
   const [newUser, setNewUser]             = useState({ username: '', password: '', role: 'lector' });
+
+  // Contactos, Reuniones y Suscriptores
+  const [contactsList, setContactsList]                   = useState([]);
+  const [contactSearch, setContactSearch]                 = useState('');
+  const [contactTypeFilter, setContactTypeFilter]         = useState('todos'); // 'todos' | 'reunion' | 'contacto'
+  const [contactStatusFilter, setContactStatusFilter]     = useState('todos');
+  const [subscribersList, setSubscribersList]             = useState([]);
+  const [subscriberSearch, setSubscriberSearch]           = useState('');
+  const [copiedAllSubs, setCopiedAllSubs]                 = useState(false);
+  const [isLoadingContacts, setIsLoadingContacts]         = useState(false);
+  const [isLoadingSubs, setIsLoadingSubs]                 = useState(false);
+  const [showBroadcastModal, setShowBroadcastModal]       = useState(false);
+  const [broadcastForm, setBroadcastForm]                 = useState({ subject: '', title: '', content: '' });
+  const [isSendingBroadcast, setIsSendingBroadcast]       = useState(false);
+  const [broadcastResult, setBroadcastResult]             = useState(null);
 
   // Carpetas de clientes y Trabajos
   const [clientFolders, setClientFolders] = useState([]);
@@ -876,12 +896,194 @@ const Admin = () => {
   };
 
   // ═══════════════════════════════════════════════════════════════
+  // GESTIÓN DE CONTACTOS Y SUSCRIPTORES
+  // ═══════════════════════════════════════════════════════════════
+  const fetchContacts = async () => {
+    setIsLoadingContacts(true);
+    let localData = [];
+    try {
+      localData = JSON.parse(localStorage.getItem('contactSubmissions') || '[]');
+    } catch (e) {}
+
+    try {
+      const res = await fetch('/api/contacts');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.contacts)) {
+        const ids = new Set(data.contacts.map(c => c.id));
+        const merged = [...data.contacts];
+        for (const item of localData) {
+          if (!ids.has(item.id)) merged.push(item);
+        }
+        setContactsList(merged);
+        localStorage.setItem('contactSubmissions', JSON.stringify(merged));
+        setIsLoadingContacts(false);
+        return;
+      }
+    } catch (err) {
+      // Backend offline, usar datos de localStorage
+    }
+    setContactsList(localData);
+    setIsLoadingContacts(false);
+  };
+
+  const fetchSubscribers = async () => {
+    setIsLoadingSubs(true);
+    let localSubs = [];
+    try {
+      localSubs = JSON.parse(localStorage.getItem('newsletterSubs') || '[]');
+    } catch (e) {}
+
+    try {
+      const res = await fetch('/api/newsletter');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.subscribers)) {
+        const emails = new Set(data.subscribers.map(s => (s.email || '').toLowerCase()));
+        const merged = [...data.subscribers];
+        for (const item of localSubs) {
+          const em = (item.email || '').toLowerCase();
+          if (em && !emails.has(em)) {
+            merged.push({ id: 'sub_' + Date.now(), email: em, createdAt: item.date || new Date().toISOString(), status: 'Activo' });
+          }
+        }
+        setSubscribersList(merged);
+        setIsLoadingSubs(false);
+        return;
+      }
+    } catch (err) {}
+    setSubscribersList(localSubs.map((s, idx) => ({ id: 'sub_' + idx, email: s.email, createdAt: s.date || new Date().toISOString(), status: 'Activo' })));
+    setIsLoadingSubs(false);
+  };
+
+  useEffect(() => {
+    fetchContacts();
+    fetchSubscribers();
+  }, []);
+
+  const handleUpdateContactStatus = async (id, newStatus) => {
+    const updated = contactsList.map(c => c.id === id ? { ...c, status: newStatus } : c);
+    setContactsList(updated);
+    localStorage.setItem('contactSubmissions', JSON.stringify(updated));
+    try {
+      await fetch(`/api/contacts/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+    } catch (e) {}
+  };
+
+  const handleDeleteContact = async (id) => {
+    if (!window.confirm('¿Seguro que deseas eliminar esta solicitud de contacto?')) return;
+    const updated = contactsList.filter(c => c.id !== id);
+    setContactsList(updated);
+    localStorage.setItem('contactSubmissions', JSON.stringify(updated));
+    try {
+      await fetch(`/api/contacts/${id}`, { method: 'DELETE' });
+    } catch (e) {}
+  };
+
+  const handleDeleteSubscriber = async (email) => {
+    if (!window.confirm(`¿Seguro que deseas eliminar a ${email} del listado?`)) return;
+    const cleanEmail = email.toLowerCase();
+    const updated = subscribersList.filter(s => s.email.toLowerCase() !== cleanEmail);
+    setSubscribersList(updated);
+    try {
+      const local = JSON.parse(localStorage.getItem('newsletterSubs') || '[]').filter(s => s.email.toLowerCase() !== cleanEmail);
+      localStorage.setItem('newsletterSubs', JSON.stringify(local));
+      await fetch(`/api/newsletter/${encodeURIComponent(cleanEmail)}`, { method: 'DELETE' });
+    } catch (e) {}
+  };
+
+  const handleCopyAllSubscribers = () => {
+    const emailsStr = subscribersList.map(s => s.email).join(', ');
+    navigator.clipboard.writeText(emailsStr);
+    setCopiedAllSubs(true);
+    setTimeout(() => setCopiedAllSubs(false), 3000);
+  };
+
+  const handleExportContactsCSV = () => {
+    if (contactsList.length === 0) return alert('No hay contactos registrados para exportar');
+    const headers = ['ID', 'Tipo', 'Nombre', 'Telefono', 'Email', 'Solucion', 'Detalle', 'Motivo', 'Estado', 'Fecha'];
+    const rows = contactsList.map(c => [
+      c.id,
+      c.type,
+      `"${(c.name || '').replace(/"/g, '""')}"`,
+      `"${c.phone || ''}"`,
+      c.email,
+      `"${(c.solution || '').replace(/"/g, '""')}"`,
+      `"${(c.solutionDetail || '').replace(/"/g, '""')}"`,
+      `"${(c.reason || '').replace(/"/g, '""')}"`,
+      c.status,
+      c.createdAt
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `contactos_consultio_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportSubscribersCSV = () => {
+    if (subscribersList.length === 0) return alert('No hay suscriptores registrados para exportar');
+    const headers = ['Email', 'Fecha de Suscripcion', 'Estado'];
+    const rows = subscribersList.map(s => [s.email, s.createdAt, s.status || 'Activo']);
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `suscriptores_insights_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleSendBroadcast = async (e) => {
+    e.preventDefault();
+    if (!broadcastForm.subject || !broadcastForm.content) {
+      alert('Por favor completa el asunto y el contenido del reporte.');
+      return;
+    }
+    const activeCount = subscribersList.filter(s => s.status !== 'Inactivo').length;
+    if (activeCount === 0) {
+      alert('No hay suscriptores activos para enviar la campaña.');
+      return;
+    }
+    if (!window.confirm(`¿Confirmas el envío de esta campaña a ${activeCount} suscriptores a través de Resend?`)) return;
+
+    setIsSendingBroadcast(true);
+    setBroadcastResult(null);
+    try {
+      const res = await fetch('/api/newsletter/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(broadcastForm)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBroadcastResult({ type: 'success', message: data.message });
+        setBroadcastForm({ subject: '', title: '', content: '' });
+      } else {
+        setBroadcastResult({ type: 'error', message: data.error || 'Error al enviar la campaña' });
+      }
+    } catch (err) {
+      setBroadcastResult({ type: 'error', message: 'No se pudo conectar con el servidor para enviar la campaña.' });
+    } finally {
+      setIsSendingBroadcast(false);
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════════
   // FILTRADO Y PERMISOS
   // ═══════════════════════════════════════════════════════════════
   const navItems = userRole === 'lector'
     ? [{ key: 'works', label: 'Trabajos', icon: Briefcase }]
     : [
         { key: 'works', label: 'Trabajos', icon: Briefcase },
+        { key: 'contacts', label: 'Contactos & Reuniones', icon: Mail },
+        { key: 'subscribers', label: 'Suscripciones Insights', icon: Send },
         { key: 'users', label: 'Usuarios', icon: ShieldCheck }
       ];
 
@@ -1072,23 +1274,57 @@ const Admin = () => {
             <div>
               <h1 className="text-2xl md:text-3xl font-display font-bold text-white flex items-center gap-3">
                 {activeTab === 'works' && <Briefcase className="text-[var(--color-brand-cyan)]" size={28} />}
+                {activeTab === 'contacts' && <Mail className="text-[var(--color-brand-cyan)]" size={28} />}
+                {activeTab === 'subscribers' && <Send className="text-emerald-400" size={28} />}
                 {activeTab === 'users' && <ShieldCheck className="text-purple-400" size={28} />}
                 <span>{tabLabel}</span>
               </h1>
               <p className="text-sm text-brand-secondary mt-1">
                 {activeTab === 'works' && 'Gestión de carpetas de clientes, tableros interactivos y entrega de trabajos.'}
+                {activeTab === 'contacts' && 'Solicitudes recibidas desde el formulario web (Agendar Reunión y Contacto General).'}
+                {activeTab === 'subscribers' && 'Base de correos suscritos al newsletter mensual de Insights & Reportes.'}
                 {activeTab === 'users' && 'Administración de cuentas de acceso, credenciales y asignación de permisos.'}
               </p>
             </div>
             
-            {activeTab === 'works' && userRole === 'administrador' && !selectedFolder && (
-              <button
-                onClick={() => setShowAddFolderModal(true)}
-                className="btn-primary flex items-center gap-2 self-start sm:self-auto shadow-lg shadow-[var(--color-brand-cyan)]/15"
-              >
-                <FolderPlus size={18} /> Agregar Cliente
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {activeTab === 'works' && userRole === 'administrador' && !selectedFolder && (
+                <button
+                  onClick={() => setShowAddFolderModal(true)}
+                  className="btn-primary flex items-center gap-2 self-start sm:self-auto shadow-lg shadow-[var(--color-brand-cyan)]/15"
+                >
+                  <FolderPlus size={18} /> Agregar Cliente
+                </button>
+              )}
+
+              {activeTab === 'contacts' && (
+                <button
+                  onClick={handleExportContactsCSV}
+                  className="btn-secondary text-xs flex items-center gap-2 py-2.5 px-4"
+                  title="Exportar base en archivo CSV compatible con Excel"
+                >
+                  <Download size={15} /> Exportar CSV
+                </button>
+              )}
+
+              {activeTab === 'subscribers' && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleCopyAllSubscribers}
+                    className="btn-primary text-xs flex items-center gap-2 py-2.5 px-4"
+                    title="Copiar lista de emails separados por coma"
+                  >
+                    <Copy size={15} /> {copiedAllSubs ? '¡Copiados!' : 'Copiar Emails'}
+                  </button>
+                  <button
+                    onClick={handleExportSubscribersCSV}
+                    className="btn-secondary text-xs flex items-center gap-2 py-2.5 px-4"
+                  >
+                    <Download size={15} /> Exportar CSV
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* ══════════════════════════════════════════════════════════
@@ -1554,6 +1790,394 @@ const Admin = () => {
                   </tbody>
                 </table>
               </div>
+            </motion.div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════
+              PESTAÑA: CONTACTOS & REUNIONES
+             ══════════════════════════════════════════════════════════ */}
+          {activeTab === 'contacts' && userRole === 'administrador' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-6">
+              
+              {/* Resend status alert banner */}
+              <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-3 text-cyan-300">
+                  <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+                    <Mail size={16} />
+                  </div>
+                  <div>
+                    <span className="font-bold uppercase tracking-wider block">Notificaciones Automáticas vía Resend</span>
+                    <span className="text-white/70">
+                      Cada nueva solicitud envía una alerta por email a la casilla del equipo y un acuse de recibo al interesado.
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={fetchContacts}
+                  disabled={isLoadingContacts}
+                  className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 self-end sm:self-auto transition-colors"
+                >
+                  <RefreshCw size={13} className={isLoadingContacts ? 'animate-spin' : ''} />
+                  <span>Actualizar</span>
+                </button>
+              </div>
+
+              {/* Métricas rápidas */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="glass-elevated p-5 rounded-2xl">
+                  <span className="text-xs font-display font-bold uppercase tracking-wider text-brand-secondary block mb-1">Total Solicitudes</span>
+                  <span className="text-3xl font-display font-black text-white">{contactsList.length}</span>
+                </div>
+                <div className="glass-elevated p-5 rounded-2xl">
+                  <span className="text-xs font-display font-bold uppercase tracking-wider text-[var(--color-brand-cyan)] block mb-1">Reuniones Agendadas</span>
+                  <span className="text-3xl font-display font-black text-[var(--color-brand-cyan)]">
+                    {contactsList.filter(c => (c.type || '').toLowerCase().includes('reuni')).length}
+                  </span>
+                </div>
+                <div className="glass-elevated p-5 rounded-2xl">
+                  <span className="text-xs font-display font-bold uppercase tracking-wider text-purple-400 block mb-1">Consultas Generales</span>
+                  <span className="text-3xl font-display font-black text-purple-300">
+                    {contactsList.filter(c => !(c.type || '').toLowerCase().includes('reuni')).length}
+                  </span>
+                </div>
+                <div className="glass-elevated p-5 rounded-2xl">
+                  <span className="text-xs font-display font-bold uppercase tracking-wider text-amber-400 block mb-1">Estado Nuevo / Pendiente</span>
+                  <span className="text-3xl font-display font-black text-amber-300">
+                    {contactsList.filter(c => c.status === 'Nuevo' || !c.status).length}
+                  </span>
+                </div>
+              </div>
+
+              {/* Filtros y Buscador */}
+              <div className="glass-elevated p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="relative w-full md:w-80">
+                  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={contactSearch}
+                    onChange={e => setContactSearch(e.target.value)}
+                    placeholder="Buscar por nombre, email, teléfono o solución..."
+                    className="w-full bg-[#131B2E] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[var(--color-brand-cyan)]"
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                  {/* Filtro por tipo */}
+                  <select
+                    value={contactTypeFilter}
+                    onChange={e => setContactTypeFilter(e.target.value)}
+                    className="bg-[#131B2E] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[var(--color-brand-cyan)]"
+                  >
+                    <option value="todos">Todos los Tipos</option>
+                    <option value="reunion">Solo Reuniones</option>
+                    <option value="contacto">Solo Contactos</option>
+                  </select>
+
+                  {/* Filtro por estado */}
+                  <select
+                    value={contactStatusFilter}
+                    onChange={e => setContactStatusFilter(e.target.value)}
+                    className="bg-[#131B2E] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[var(--color-brand-cyan)]"
+                  >
+                    <option value="todos">Todos los Estados</option>
+                    <option value="Nuevo">Nuevos</option>
+                    <option value="Contactado">Contactados</option>
+                    <option value="Reunión Agendada">Reunión Agendada</option>
+                    <option value="Cerrado">Cerrados</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Listado / Tabla de Contactos */}
+              <div className="glass-elevated rounded-2xl p-4 md:p-6 overflow-x-auto">
+                {(() => {
+                  const filtered = contactsList.filter(c => {
+                    const q = contactSearch.toLowerCase();
+                    const matchesSearch =
+                      (c.name || '').toLowerCase().includes(q) ||
+                      (c.email || '').toLowerCase().includes(q) ||
+                      (c.phone || '').toLowerCase().includes(q) ||
+                      (c.solution || '').toLowerCase().includes(q) ||
+                      (c.reason || '').toLowerCase().includes(q);
+                    const isReunion = (c.type || '').toLowerCase().includes('reuni');
+                    const matchesType =
+                      contactTypeFilter === 'todos' ? true :
+                      contactTypeFilter === 'reunion' ? isReunion :
+                      !isReunion;
+                    const matchesStatus =
+                      contactStatusFilter === 'todos' ? true :
+                      (c.status || 'Nuevo') === contactStatusFilter;
+                    return matchesSearch && matchesType && matchesStatus;
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="py-12 text-center text-brand-secondary text-sm">
+                        <Mail className="mx-auto mb-3 text-slate-600" size={32} />
+                        <p className="font-medium text-white mb-1">No hay solicitudes que coincidan con el filtro</p>
+                        <p className="text-xs text-slate-400">Los contactos ingresados a través del formulario web aparecerán aquí.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="flex flex-col gap-3">
+                      {filtered.map(contact => {
+                        const isReunion = (contact.type || '').toLowerCase().includes('reuni');
+                        const phoneDigits = (contact.phone || '').replace(/[^0-9]/g, '');
+                        return (
+                          <div
+                            key={contact.id}
+                            className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/15 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                          >
+                            <div className="flex-1">
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-display font-black uppercase tracking-wider ${
+                                  isReunion ? 'bg-[var(--color-brand-cyan)]/20 text-[var(--color-brand-cyan)] border border-[var(--color-brand-cyan)]/30' : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                }`}>
+                                  {isReunion ? 'Solicitud de Reunión' : 'Contacto General'}
+                                </span>
+                                <span className="text-xs text-slate-500 font-mono">
+                                  {contact.createdAt ? new Date(contact.createdAt).toLocaleString('es-AR') : 'Fecha no registrada'}
+                                </span>
+                              </div>
+
+                              <h4 className="text-base font-display font-bold text-white mb-1">
+                                {contact.name}
+                              </h4>
+
+                              {isReunion && (
+                                <p className="text-xs text-white/80 mb-2">
+                                  <span className="text-brand-secondary">Solución de interés: </span>
+                                  <strong className="text-[var(--color-brand-cyan)]">{contact.solution}</strong>
+                                  {contact.solutionDetail && <span className="text-slate-400 italic"> — "{contact.solutionDetail}"</span>}
+                                </p>
+                              )}
+
+                              {!isReunion && contact.reason && (
+                                <p className="text-xs text-white/80 mb-2 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                                  <span className="text-brand-secondary block mb-1 font-semibold">Motivo de consulta:</span>
+                                  "{contact.reason}"
+                                </p>
+                              )}
+
+                              {/* Canales directos */}
+                              <div className="flex flex-wrap items-center gap-3 text-xs font-mono pt-1">
+                                {contact.phone && (
+                                  <a
+                                    href={`https://wa.me/${phoneDigits}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-emerald-400 hover:underline flex items-center gap-1.5"
+                                  >
+                                    <Phone size={13} /> {contact.phone}
+                                  </a>
+                                )}
+                                {contact.email && (
+                                  <a
+                                    href={`mailto:${contact.email}`}
+                                    className="text-cyan-300 hover:underline flex items-center gap-1.5"
+                                  >
+                                    <Mail size={13} /> {contact.email}
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Estado y Acciones */}
+                            <div className="flex items-center gap-3 self-end lg:self-center">
+                              <select
+                                value={contact.status || 'Nuevo'}
+                                onChange={e => handleUpdateContactStatus(contact.id, e.target.value)}
+                                className={`text-xs font-bold uppercase rounded-xl px-3 py-2 border focus:outline-none cursor-pointer ${
+                                  (contact.status || 'Nuevo') === 'Nuevo' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
+                                  contact.status === 'Contactado' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
+                                  contact.status === 'Reunión Agendada' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
+                                  'bg-slate-500/20 text-slate-300 border-slate-500/30'
+                                }`}
+                              >
+                                <option value="Nuevo">Nuevo</option>
+                                <option value="Contactado">Contactado</option>
+                                <option value="Reunión Agendada">Reunión Agendada</option>
+                                <option value="Cerrado">Cerrado</option>
+                              </select>
+
+                              <button
+                                onClick={() => handleDeleteContact(contact.id)}
+                                className="p-2 text-red-400 hover:bg-red-400/10 rounded-xl transition-colors"
+                                title="Eliminar solicitud"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            </motion.div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════
+              PESTAÑA: SUSCRIPCIONES INSIGHTS & REPORTES
+             ══════════════════════════════════════════════════════════ */}
+          {activeTab === 'subscribers' && userRole === 'administrador' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-6">
+              
+              {/* Banner Resend Audiences */}
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-3 text-emerald-300">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                    <Send size={16} />
+                  </div>
+                  <div>
+                    <span className="font-bold uppercase tracking-wider block">Campañas con Resend</span>
+                    <span className="text-white/70">
+                      Usa el botón "Copiar Emails" para importar o sincronizar esta lista con tus envíos masivos en Resend.
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={fetchSubscribers}
+                  disabled={isLoadingSubs}
+                  className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 self-end sm:self-auto transition-colors"
+                >
+                  <RefreshCw size={13} className={isLoadingSubs ? 'animate-spin' : ''} />
+                  <span>Actualizar</span>
+                </button>
+              </div>
+
+              {/* Métricas */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="glass-elevated p-5 rounded-2xl">
+                  <span className="text-xs font-display font-bold uppercase tracking-wider text-brand-secondary block mb-1">Total Suscriptores Activos</span>
+                  <span className="text-3xl font-display font-black text-white">{subscribersList.length}</span>
+                </div>
+                <div className="glass-elevated p-5 rounded-2xl">
+                  <span className="text-xs font-display font-bold uppercase tracking-wider text-emerald-400 block mb-1">Última Suscripción</span>
+                  <span className="text-base font-display font-bold text-white block mt-2">
+                    {subscribersList.length > 0 && subscribersList[0].createdAt
+                      ? new Date(subscribersList[0].createdAt).toLocaleString('es-AR')
+                      : 'Ninguna registrada'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Buscador */}
+              <div className="glass-elevated p-4 rounded-2xl flex flex-col sm:flex-row gap-4 items-center justify-between">
+                <div className="relative w-full sm:w-80">
+                  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={subscriberSearch}
+                    onChange={e => setSubscriberSearch(e.target.value)}
+                    placeholder="Buscar por correo electrónico..."
+                    className="w-full bg-[#131B2E] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[var(--color-brand-cyan)]"
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setBroadcastResult(null);
+                      setShowBroadcastModal(true);
+                    }}
+                    className="btn-primary text-xs py-2 px-4 flex items-center gap-1.5 shadow-[0_0_15px_rgba(0,229,255,0.25)]"
+                  >
+                    <Send size={14} /> Redactar Campaña
+                  </button>
+                  <button
+                    onClick={handleCopyAllSubscribers}
+                    className="btn-secondary text-xs py-2 px-4 flex items-center gap-1.5"
+                  >
+                    <Copy size={14} /> {copiedAllSubs ? '¡Copiados al portapapeles!' : 'Copiar Todos'}
+                  </button>
+                  <button
+                    onClick={handleExportSubscribersCSV}
+                    className="btn-secondary text-xs py-2 px-4 flex items-center gap-1.5"
+                  >
+                    <Download size={14} /> Exportar CSV
+                  </button>
+                </div>
+              </div>
+
+              {/* Tabla de Suscriptores */}
+              <div className="glass-elevated rounded-2xl p-4 md:p-6 overflow-x-auto">
+                <table className="w-full text-left min-w-[500px]">
+                  <thead>
+                    <tr className="border-b border-white/10 text-brand-secondary text-xs uppercase tracking-wider">
+                      <th className="pb-3 font-semibold w-12">#</th>
+                      <th className="pb-3 font-semibold">Correo Electrónico</th>
+                      <th className="pb-3 font-semibold">Fecha de Suscripción</th>
+                      <th className="pb-3 font-semibold">Estado</th>
+                      <th className="pb-3 font-semibold text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const filtered = subscribersList.filter(s =>
+                        (s.email || '').toLowerCase().includes(subscriberSearch.toLowerCase())
+                      );
+
+                      if (filtered.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan="5" className="py-8 text-center text-brand-secondary text-sm">
+                              No hay personas suscritas a Insights & Reportes todavía.
+                            </td>
+                          </tr>
+                        );
+                      }
+
+                      return filtered.map((sub, idx) => (
+                        <tr key={sub.id || idx} className="border-b border-white/5 hover:bg-white/[0.02] text-sm">
+                          <td className="py-3.5 text-xs text-slate-500 font-mono">{idx + 1}</td>
+                          <td className="py-3.5 text-white font-mono font-medium">
+                            {sub.email}
+                          </td>
+                          <td className="py-3.5 text-xs text-slate-400">
+                            {sub.createdAt ? new Date(sub.createdAt).toLocaleDateString('es-AR') : '—'}
+                          </td>
+                          <td className="py-3.5">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              {sub.status || 'Activo'}
+                            </span>
+                          </td>
+                          <td className="py-3.5 text-right flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(sub.email);
+                                alert('Email copiado: ' + sub.email);
+                              }}
+                              className="p-1.5 text-cyan-300 hover:bg-cyan-400/10 rounded-lg transition-colors"
+                              title="Copiar email"
+                            >
+                              <Copy size={15} />
+                            </button>
+                            <a
+                              href={`mailto:${sub.email}`}
+                              className="p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                              title="Escribir correo"
+                            >
+                              <Mail size={15} />
+                            </a>
+                            <button
+                              onClick={() => handleDeleteSubscriber(sub.email)}
+                              className="p-1.5 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                              title="Eliminar suscriptor"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+
             </motion.div>
           )}
 
@@ -2706,6 +3330,125 @@ const Admin = () => {
                   >
                     {isUploading ? 'Guardando...' : <><Check size={14} /> Guardar Cambios</>}
                   </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════════════════════════════════════════════════════════════
+          MODAL: REDACTAR Y ENVIAR CAMPAÑA A SUSCRIPTORES (RESEND)
+         ══════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {showBroadcastModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-2xl glass-elevated border border-[var(--color-brand-cyan)]/40 rounded-2xl p-6 shadow-2xl my-8 relative"
+            >
+              <button
+                onClick={() => setShowBroadcastModal(false)}
+                className="absolute top-5 right-5 text-slate-400 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-[var(--color-brand-cyan)]/20 border border-[var(--color-brand-cyan)]/40 flex items-center justify-center text-[var(--color-brand-cyan)]">
+                  <Send size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Redactar Campaña / Reporte</h3>
+                  <p className="text-xs text-brand-secondary">
+                    Envío masivo con Resend a <strong className="text-[var(--color-brand-cyan)]">{subscribersList.filter(s => s.status !== 'Inactivo').length} suscriptores activos</strong>
+                  </p>
+                </div>
+              </div>
+
+              {broadcastResult && (
+                <div className={`p-4 rounded-xl text-xs mb-4 flex items-center gap-2 ${
+                  broadcastResult.type === 'success'
+                    ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
+                    : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
+                }`}>
+                  {broadcastResult.type === 'success' ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+                  <span>{broadcastResult.message}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSendBroadcast} className="flex flex-col gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Asunto del Correo (Subject) <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={broadcastForm.subject}
+                    onChange={(e) => setBroadcastForm({ ...broadcastForm, subject: e.target.value })}
+                    className={inputCls}
+                    placeholder="Ej: Nuevo Reporte: Opinión Pública & Clima Institucional"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Título Principal en el encabezado (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={broadcastForm.title}
+                    onChange={(e) => setBroadcastForm({ ...broadcastForm, title: e.target.value })}
+                    className={inputCls}
+                    placeholder="Ej: Análisis Metodológico Octubre 2026"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Cuerpo del Mensaje / Reporte <span className="text-rose-400">*</span>
+                  </label>
+                  <textarea
+                    rows={6}
+                    required
+                    value={broadcastForm.content}
+                    onChange={(e) => setBroadcastForm({ ...broadcastForm, content: e.target.value })}
+                    className={textareaCls}
+                    placeholder="Escribe el contenido del reporte, conclusiones, enlaces o novedades para tus suscriptores..."
+                  />
+                  <span className="text-[11px] text-slate-500 mt-1 block">
+                    Los saltos de línea se respetarán en el correo enviado con formato institucional.
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between pt-3 border-t border-white/10 mt-2">
+                  <span className="text-xs text-slate-400">
+                    Remitente: <strong className="text-white">notificaciones@grupoconsultio.com</strong>
+                  </span>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowBroadcastModal(false)}
+                      className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-white/5"
+                    >
+                      Cerrar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSendingBroadcast}
+                      className="btn-primary py-2 px-5 text-xs flex items-center gap-1.5"
+                    >
+                      {isSendingBroadcast ? (
+                        <>Enviando con Resend...</>
+                      ) : (
+                        <><Send size={14} /> Disparar Campaña</>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </form>
             </motion.div>

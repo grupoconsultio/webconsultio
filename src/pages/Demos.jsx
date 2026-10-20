@@ -100,101 +100,120 @@ const products = [
 
 const Demos = () => {
   const [active, setActive] = useState(null);
+  const [filter, setFilter] = useState('todos');
 
   React.useEffect(() => {
     window.scrollTo(0, 0);
   }, [active]);
 
+  const filteredProducts = products.filter(p => {
+    if (filter === 'todos') return true;
+    if (filter === 'publico') return p.category === 'Público' || p.category === 'General';
+    if (filter === 'privado') return p.category === 'Privado';
+    return true;
+  });
+
   return (
-    <div className="min-h-screen bg-brand-bg pt-28 pb-20">
-      <div className="container mx-auto px-6">
+    <div className="min-h-screen bg-brand-bg pt-28 pb-24">
+      <div className="container mx-auto px-6 md:px-12">
 
         {/* Header */}
         <div className="mb-14">
-          <Link to="/" className="inline-flex items-center gap-2 text-brand-secondary hover:text-[var(--color-brand-cyan)] transition-colors text-sm mb-8">
-            <ArrowLeft size={16} /> Volver al inicio
+          <Link to="/" className="inline-flex items-center gap-2 text-white/50 hover:text-[var(--color-brand-cyan)] transition-colors text-xs font-display font-bold uppercase tracking-wider mb-8">
+            <ArrowLeft size={16} /> Volver al Inicio
           </Link>
-          <span className="block text-[var(--color-brand-cyan)] font-semibold tracking-widest uppercase text-xs mb-3">Demostraciones</span>
-          <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">Nuestros Productos</h1>
-          <p className="text-brand-secondary max-w-xl leading-relaxed">
-            Explorá algunas de las herramientas que desarrollamos. Estos son proyectos modelo: además de estas soluciones, diseñamos estrategias a medida para resolver cualquier desafío que su organización enfrente. Transformamos necesidades en soluciones tecnológicas y analíticas personalizadas.
+          <div className="olivia-tag mb-4">
+            <span>PORTAFOLIO DE SOLUCIONES //</span>
+          </div>
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-display font-black uppercase tracking-tight text-white mb-6">
+            PRODUCTOS & DEMOS
+          </h1>
+          <p className="text-white/70 max-w-2xl font-sans text-base md:text-lg leading-relaxed mb-10">
+            Explorá nuestras herramientas interactivas en vivo. Además de estas plataformas modelo, diseñamos arquitecturas analíticas y sistemas a medida para los desafíos específicos de su organización.
           </p>
+
+          {/* Olivia-style Filter Pills */}
+          {!active && (
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <button
+                onClick={() => setFilter('todos')}
+                className={`px-6 py-2.5 rounded-full text-xs font-display font-bold uppercase tracking-wider transition-all duration-300 ${
+                  filter === 'todos'
+                    ? 'bg-white text-black shadow-[0_2px_15px_rgba(255,255,255,0.2)]'
+                    : 'bg-white/5 text-white/60 hover:text-white border border-white/10'
+                }`}
+              >
+                Todas las Soluciones ({products.length})
+              </button>
+              <button
+                onClick={() => setFilter('publico')}
+                className={`px-6 py-2.5 rounded-full text-xs font-display font-bold uppercase tracking-wider transition-all duration-300 ${
+                  filter === 'publico'
+                    ? 'bg-white text-black shadow-[0_2px_15px_rgba(255,255,255,0.2)]'
+                    : 'bg-white/5 text-white/60 hover:text-white border border-white/10'
+                }`}
+              >
+                Sector Público
+              </button>
+              <button
+                onClick={() => setFilter('privado')}
+                className={`px-6 py-2.5 rounded-full text-xs font-display font-bold uppercase tracking-wider transition-all duration-300 ${
+                  filter === 'privado'
+                    ? 'bg-white text-black shadow-[0_2px_15px_rgba(255,255,255,0.2)]'
+                    : 'bg-white/5 text-white/60 hover:text-white border border-white/10'
+                }`}
+              >
+                Sector Privado
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Product cards grouped by Sector */}
+        {/* Product cards in Olivia Grid */}
         {!active && (
-          <div className="space-y-16">
-            {/* Sector Público */}
-            <div className="space-y-8">
-              <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-brand-secondary border-l-2 border-[var(--color-brand-cyan)] pl-4">Sector Público</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {products.filter(p => p.category === 'Público' || p.category === 'General').map((p) => {
-                  const Icon = p.icon;
-                  return (
-                    <motion.div
-                      key={p.key}
-                      whileHover={{ y: -6 }}
-                      onClick={() => setActive(p.key)}
-                      className="glass-elevated rounded-3xl p-8 flex flex-col gap-6 border border-white/5 transition-all duration-300 cursor-pointer hover:border-[var(--color-brand-cyan)]/30"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="w-14 h-14 rounded-2xl bg-[var(--color-brand-cyan)]/10 flex items-center justify-center">
-                          <Icon size={26} className="text-[var(--color-brand-cyan)]" />
-                        </div>
-                        <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[var(--color-brand-cyan)]/10 text-[var(--color-brand-cyan)]">
-                          {p.tag}
-                        </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+            {filteredProducts.map((p) => {
+              const Icon = p.icon;
+              return (
+                <motion.div
+                  key={p.key}
+                  whileHover={{ y: -6 }}
+                  onClick={() => setActive(p.key)}
+                  className="olivia-card p-8 flex flex-col justify-between group cursor-pointer relative overflow-hidden"
+                >
+                  <div>
+                    <div className="flex items-start justify-between mb-6">
+                      <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:text-[var(--color-brand-cyan)] group-hover:border-[var(--color-brand-cyan)]/40 group-hover:bg-[var(--color-brand-cyan)]/10 transition-all duration-300">
+                        <Icon size={24} />
                       </div>
-                      <div>
-                        <h2 className="text-xl font-display font-bold text-white mb-1">{p.title}</h2>
-                        <p className="text-sm text-[var(--color-brand-cyan)] mb-3 font-medium">{p.subtitle}</p>
-                        <p className="text-brand-secondary text-sm leading-relaxed line-clamp-3">{p.description}</p>
-                      </div>
-                      <div className="flex items-center gap-2 text-[var(--color-brand-cyan)] text-sm font-semibold mt-auto">
-                        Ver demo <ChevronRight size={16} />
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
+                      <span className="text-[10px] font-display font-bold uppercase tracking-widest px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/70">
+                        {p.tag}
+                      </span>
+                    </div>
 
-            {/* Sector Privado */}
-            <div className="space-y-8">
-              <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-brand-secondary border-l-2 border-purple-500 pl-4">Sector Privado</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {products.filter(p => p.category === 'Privado').map((p) => {
-                  const Icon = p.icon;
-                  return (
-                    <motion.div
-                      key={p.key}
-                      whileHover={{ y: -6 }}
-                      onClick={() => setActive(p.key)}
-                      className="glass-elevated rounded-3xl p-8 flex flex-col gap-6 border border-white/5 transition-all duration-300 cursor-pointer hover:border-purple-500/30"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center">
-                          <Icon size={26} className="text-purple-500" />
-                        </div>
-                        <span className="text-xs font-semibold px-3 py-1 rounded-full bg-purple-500/10 text-purple-500">
-                          {p.tag}
-                        </span>
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-display font-bold text-white mb-1">{p.title}</h2>
-                        <p className="text-sm text-purple-400 mb-3 font-medium">{p.subtitle}</p>
-                        <p className="text-brand-secondary text-sm leading-relaxed line-clamp-3">{p.description}</p>
-                      </div>
-                      <div className="flex items-center gap-2 text-purple-400 text-sm font-semibold mt-auto">
-                        Ver demo <ChevronRight size={16} />
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
+                    <h2 className="text-xl md:text-2xl font-display font-black uppercase text-white mb-1.5 group-hover:text-[var(--color-brand-cyan)] transition-colors">
+                      {p.title}
+                    </h2>
+                    <p className="text-xs font-mono uppercase tracking-wider text-[var(--color-brand-cyan)] mb-4">
+                      {p.subtitle}
+                    </p>
+                    <p className="text-white/70 text-sm leading-relaxed font-sans mb-6">
+                      {p.description}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-6 border-t border-white/10 text-xs font-display font-bold uppercase tracking-wider text-white/80 group-hover:text-[var(--color-brand-cyan)] transition-colors">
+                    <span>EXPLORAR DEMO</span>
+                    <span className="w-8 h-8 rounded-full border border-white/15 bg-white/5 flex items-center justify-center group-hover:border-[var(--color-brand-cyan)] group-hover:bg-[var(--color-brand-cyan)] group-hover:text-black transition-all duration-300">
+                      <ChevronRight size={16} />
+                    </span>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         )}
+
 
         {/* Demo view */}
         <AnimatePresence mode="wait">

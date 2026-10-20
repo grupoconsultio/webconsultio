@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import pool, { testConnection } from './db.js';
 import XLSX from 'xlsx';
 import sanLuisRouter from './sanluis-routes.js';
+import { Resend } from 'resend';
 
 dotenv.config();
 
@@ -826,6 +827,285 @@ app.post('/api/upload', async (req, res) => {
 
 // Rutas específicas para Encuesta San Luis 2026 (PostgreSQL)
 app.use('/api/san-luis', sanLuisRouter);
+
+// ==============================================================================
+// GESTIÓN DE CONTACTOS, REUNIONES Y NOTIFICACIONES RESEND
+// ==============================================================================
+const resendApiKey = process.env.RESEND_API_KEY || '';
+const resendClient = resendApiKey ? new Resend(resendApiKey) : null;
+const CONTACTS_FILE = path.join(__dirname, 'contacts.json');
+const SUBSCRIBERS_FILE = path.join(__dirname, 'subscribers.json');
+
+function loadJsonFile(filePath, fallback = []) {
+  try {
+    if (fs.existsSync(filePath)) {
+      return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    }
+  } catch (e) {
+    console.error(`Error leyendo ${filePath}:`, e);
+  }
+  return fallback;
+}
+
+function saveJsonFile(filePath, data) {
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+  } catch (e) {
+    console.error(`Error guardando ${filePath}:`, e);
+  }
+}
+
+// Endpoint para recibir solicitud de reunión o contacto general
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { type, name, phone, email, solution, solutionDetail, reason } = req.body;
+
+    if (!name || !email || !phone) {
+      return res.status(400).json({ success: false, error: 'Nombre, teléfono y correo son obligatorios' });
+    }
+
+    const contacts = loadJsonFile(CONTACTS_FILE);
+    const newContact = {
+      id: 'contact_' + Date.now(),
+      type: type === 'reunion' ? 'Reunión' : 'Contacto',
+      name: String(name).trim(),
+      phone: String(phone).trim(),
+      email: String(email).trim().toLowerCase(),
+      solution: solution || (type === 'reunion' ? 'No especificada' : 'Consulta general'),
+      solutionDetail: solutionDetail || '',
+      reason: reason || '',
+      status: 'Nuevo',
+      createdAt: new Date().toISOString()
+    };
+
+    contacts.unshift(newContact);
+    saveJsonFile(CONTACTS_FILE, contacts);
+
+    console.log(`[Contacto] Nueva solicitud de ${newContact.type} recibida: ${newContact.name} (${newContact.email})`);
+
+    // Disparo de notificaciones mediante Resend si está configurado
+    if (resendClient) {
+      const fromEmail = process.env.RESEND_FROM || 'Grupo Consultio <notificaciones@grupoconsultio.com>';
+      const adminEmail = process.env.RESEND_NOTIFY_EMAIL || 'info@grupoconsultio.com';
+
+      // 1. Notificación al equipo interno de Grupo Consultio
+      try {
+        await resendClient.emails.send({
+          from: fromEmail,
+          to: adminEmail,
+          subject: `🔔 Nueva Solicitud de ${newContact.type}: ${newContact.name}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #fafafa;">
+              <h2 style="color: #0A0A0A; border-bottom: 2px solid #00E5FF; padding-bottom: 10px;">Nueva Solicitud en Grupo Consultio</h2>
+              <p>Has recibido una nueva solicitud desde la página web:</p>
+              <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                <tr><td style="padding: 8px; font-weight: bold; width: 140px;">Tipo:</td><td style="padding: 8px;">${newContact.type}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold;">Nombre / Organización:</td><td style="padding: 8px;">${newContact.name}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold;">Teléfono / WhatsApp:</td><td style="padding: 8px;"><a href="https://wa.me/${newContact.phone.replace(/[^0-9]/g, '')}">${newContact.phone}</a></td></tr>
+                <tr><td style="padding: 8px; font-weight: bold;">Correo:</td><td style="padding: 8px;"><a href="mailto:${newContact.email}">${newContact.email}</a></td></tr>
+                ${newContact.solution ? `<tr><td style="padding: 8px; font-weight: bold;">Solución de interés:</td><td style="padding: 8px;">${newContact.solution}</td></tr>` : ''}
+                ${newContact.solutionDetail ? `<tr><td style="padding: 8px; font-weight: bold;">Detalle opcional:</td><td style="padding: 8px;">${newContact.solutionDetail}</td></tr>` : ''}
+                ${newContact.reason ? `<tr><td style="padding: 8px; font-weight: bold;">Motivo / Consulta:</td><td style="padding: 8px;">${newContact.reason}</td></tr>` : ''}
+                <tr><td style="padding: 8px; font-weight: bold;">Fecha:</td><td style="padding: 8px;">${new Date().toLocaleString('es-AR')}</td></tr>
+              </table>
+              <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 12px; color: #777;">
+                Notificación automática enviada desde Grupo Consultio Web.
+              </div>
+            </div>
+          `
+        });
+        console.log(`[Resend] Correo de notificación enviado exitosamente a ${adminEmail}`);
+      } catch (errAdminMail) {
+        console.error('[Resend] Error al enviar notificación al equipo:', errAdminMail);
+      }
+
+      // 2. Acuse de recibo al cliente
+      try {
+        await resendClient.emails.send({
+          from: fromEmail,
+          to: newContact.email,
+          subject: `Hemos recibido tu solicitud | Grupo Consultio`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border-radius: 12px; background-color: #0A0A0A; color: #ffffff;">
+              <h2 style="color: #ffffff; margin-top: 0;">¡Hola, ${newContact.name}!</h2>
+              <p style="color: #cccccc; line-height: 1.6;">
+                Te confirmamos que hemos recibido tu solicitud de <strong>${newContact.type.toLowerCase()}</strong> en Grupo Consultio.
+              </p>
+              <p style="color: #cccccc; line-height: 1.6;">
+                Uno de nuestros consultores especializados se pondrá en contacto a la brevedad vía WhatsApp o correo electrónico para coordinar los próximos pasos.
+              </p>
+              <div style="background-color: #161616; padding: 15px; border-radius: 8px; border-left: 4px solid #00E5FF; margin: 20px 0;">
+                <p style="margin: 0; color: #aaaaaa; font-size: 13px;">
+                  ${newContact.type === 'Reunión' ? `Solución seleccionada: <strong>${newContact.solution}</strong>` : 'Tu consulta ya está siendo evaluada por nuestro equipo.'}
+                </p>
+              </div>
+              <p style="color: #888888; font-size: 13px; line-height: 1.5;">
+                Grupo Consultio — Consultoría Estratégica & Analítica<br/>
+                <a href="https://grupoconsultio.com" style="color: #00E5FF; text-decoration: none;">grupoconsultio.com</a>
+              </p>
+            </div>
+          `
+        });
+        console.log(`[Resend] Confirmación enviada al cliente: ${newContact.email}`);
+      } catch (errClientMail) {
+        console.error('[Resend] Error al enviar acuse al cliente:', errClientMail);
+      }
+    }
+
+    res.json({ success: true, message: 'Solicitud procesada correctamente', contact: newContact });
+  } catch (err) {
+    console.error('Error al procesar contacto:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Endpoint para consultar contactos (Admin)
+app.get('/api/contacts', (req, res) => {
+  const contacts = loadJsonFile(CONTACTS_FILE);
+  res.json({ success: true, contacts });
+});
+
+// Endpoint para actualizar estado de un contacto
+app.patch('/api/contacts/:id', (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  const contacts = loadJsonFile(CONTACTS_FILE);
+  const idx = contacts.findIndex(c => c.id === id);
+  if (idx !== -1) {
+    contacts[idx].status = status || contacts[idx].status;
+    contacts[idx].updatedAt = new Date().toISOString();
+    saveJsonFile(CONTACTS_FILE, contacts);
+    return res.json({ success: true, contact: contacts[idx] });
+  }
+  res.status(404).json({ success: false, error: 'Contacto no encontrado' });
+});
+
+// Endpoint para eliminar un contacto
+app.delete('/api/contacts/:id', (req, res) => {
+  const { id } = req.params;
+  let contacts = loadJsonFile(CONTACTS_FILE);
+  contacts = contacts.filter(c => c.id !== id);
+  saveJsonFile(CONTACTS_FILE, contacts);
+  res.json({ success: true, message: 'Contacto eliminado' });
+});
+
+// Endpoint para suscripciones al newsletter (Insights & Reportes)
+app.post('/api/newsletter', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'El email es obligatorio' });
+    }
+    const cleanEmail = String(email).trim().toLowerCase();
+    const subs = loadJsonFile(SUBSCRIBERS_FILE);
+    const existing = subs.find(s => s.email === cleanEmail);
+    if (!existing) {
+      const newSub = {
+        id: 'sub_' + Date.now(),
+        email: cleanEmail,
+        createdAt: new Date().toISOString(),
+        status: 'Activo'
+      };
+      subs.unshift(newSub);
+      saveJsonFile(SUBSCRIBERS_FILE, subs);
+    }
+    res.json({ success: true, message: 'Suscripción realizada con éxito' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Endpoint para listar suscriptores (Admin)
+app.get('/api/newsletter', (req, res) => {
+  const subs = loadJsonFile(SUBSCRIBERS_FILE);
+  res.json({ success: true, subscribers: subs });
+});
+
+// Endpoint para eliminar suscriptor (Admin)
+app.delete('/api/newsletter/:email', (req, res) => {
+  const emailToDelete = decodeURIComponent(req.params.email).toLowerCase();
+  let subs = loadJsonFile(SUBSCRIBERS_FILE);
+  subs = subs.filter(s => s.email !== emailToDelete);
+  saveJsonFile(SUBSCRIBERS_FILE, subs);
+  res.json({ success: true, message: 'Suscriptor eliminado' });
+});
+
+// Endpoint para enviar campaña de newsletter / reporte a todos los suscriptores (Admin)
+app.post('/api/newsletter/broadcast', async (req, res) => {
+  try {
+    const { subject, title, content } = req.body;
+    if (!subject || !content) {
+      return res.status(400).json({ success: false, error: 'Asunto y contenido son obligatorios' });
+    }
+
+    const subs = loadJsonFile(SUBSCRIBERS_FILE);
+    const activeEmails = subs.filter(s => s.status !== 'Inactivo').map(s => s.email);
+
+    if (activeEmails.length === 0) {
+      return res.status(400).json({ success: false, error: 'No hay suscriptores activos para enviar la campaña' });
+    }
+
+    if (!resendClient) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Resend no está configurado en el servidor. Verifica RESEND_API_KEY en .env' 
+      });
+    }
+
+    const fromEmail = process.env.RESEND_FROM || 'Grupo Consultio <notificaciones@grupoconsultio.com>';
+    console.log(`[Resend Campaign] Iniciando envío de campaña "${subject}" a ${activeEmails.length} destinatarios...`);
+
+    const results = await Promise.allSettled(
+      activeEmails.map(toEmail =>
+        resendClient.emails.send({
+          from: fromEmail,
+          to: toEmail,
+          subject: subject,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 30px; border-radius: 14px; background-color: #0A0A0A; color: #ffffff; border: 1px solid #222222;">
+              <div style="border-bottom: 2px solid #00E5FF; padding-bottom: 15px; margin-bottom: 25px;">
+                <span style="font-size: 11px; letter-spacing: 2px; color: #00E5FF; text-transform: uppercase; font-weight: bold;">GRUPO CONSULTIO // INSIGHTS & REPORTES</span>
+                <h1 style="color: #ffffff; margin: 10px 0 0 0; font-size: 22px;">${title || subject}</h1>
+              </div>
+
+              <div style="color: #dddddd; line-height: 1.7; font-size: 15px; margin-bottom: 30px; white-space: pre-wrap;">
+                ${content.replace(/\n/g, '<br/>')}
+              </div>
+
+              <div style="background-color: #141414; border-radius: 10px; padding: 18px; margin-top: 25px; border-left: 3px solid #00E5FF;">
+                <p style="margin: 0; font-size: 13px; color: #aaaaaa;">
+                  ¿Deseas coordinar un diagnóstico o una reunión con nuestro equipo? Respondé directamente a este correo o visitá 
+                  <a href="https://grupoconsultio.com" style="color: #00E5FF; text-decoration: none;">grupoconsultio.com</a>.
+                </p>
+              </div>
+
+              <div style="margin-top: 35px; padding-top: 20px; border-top: 1px solid #222222; font-size: 11px; color: #666666; text-align: center;">
+                Recibes este correo porque te suscribiste a Insights & Reportes en Grupo Consultio.<br/>
+                Grupo Consultio — Consultoría Estratégica & Analítica.
+              </div>
+            </div>
+          `
+        })
+      )
+    );
+
+    const sentCount = results.filter(r => r.status === 'fulfilled').length;
+    const failedCount = results.filter(r => r.status === 'rejected').length;
+
+    console.log(`[Resend Campaign] Campaña finalizada. Enviados: ${sentCount}, Fallidos: ${failedCount}`);
+
+    res.json({
+      success: true,
+      message: `Campaña enviada a ${sentCount} de ${activeEmails.length} suscriptores`,
+      sentCount,
+      failedCount,
+      totalRecipients: activeEmails.length
+    });
+  } catch (err) {
+    console.error('[Resend Campaign] Error al disparar campaña:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 
 // Servir archivos estáticos del frontend si existe la carpeta dist
