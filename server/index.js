@@ -1056,13 +1056,28 @@ app.delete('/api/newsletter/:email', (req, res) => {
 // Endpoint para enviar campaña de newsletter / reporte a todos los suscriptores (Admin)
 app.post('/api/newsletter/broadcast', async (req, res) => {
   try {
-    const { subject, title, content } = req.body;
+    const { subject, title, content, recipients } = req.body;
     if (!subject || !content) {
       return res.status(400).json({ success: false, error: 'Asunto y contenido son obligatorios' });
     }
 
-    const subs = loadJsonFile(SUBSCRIBERS_FILE);
-    const activeEmails = subs.filter(s => s.status !== 'Inactivo').map(s => s.email);
+    let subs = loadJsonFile(SUBSCRIBERS_FILE);
+
+    // Soportar destinatarios enviados directamente desde el panel o leídos de subscribers.json
+    let activeEmails = [];
+    if (Array.isArray(recipients) && recipients.length > 0) {
+      activeEmails = Array.from(new Set(recipients.map(e => String(e).trim().toLowerCase()))).filter(Boolean);
+      let updated = false;
+      for (const em of activeEmails) {
+        if (!subs.some(s => (s.email || '').toLowerCase() === em)) {
+          subs.unshift({ id: 'sub_' + Date.now(), email: em, createdAt: new Date().toISOString(), status: 'Activo' });
+          updated = true;
+        }
+      }
+      if (updated) saveJsonFile(SUBSCRIBERS_FILE, subs);
+    } else {
+      activeEmails = subs.filter(s => s.status !== 'Inactivo').map(s => s.email);
+    }
 
     if (activeEmails.length === 0) {
       return res.status(400).json({ success: false, error: 'No hay suscriptores activos para enviar la campaña' });
@@ -1120,15 +1135,24 @@ app.post('/api/newsletter/broadcast', async (req, res) => {
     );
 
     const sentCount = results.filter(r => r.status === 'fulfilled').length;
-    const failedCount = results.filter(r => r.status === 'rejected').length;
+    const rejectedList = results.filter(r => r.status === 'rejected');
 
-    console.log(`[Resend Campaign] Campaña finalizada. Enviados: ${sentCount}, Fallidos: ${failedCount}`);
+    console.log(`[Resend Campaign] Campaña finalizada. Enviados: ${sentCount}, Fallidos: ${rejectedList.length}`);
+
+    if (sentCount === 0 && rejectedList.length > 0) {
+      const firstErr = rejectedList[0].reason?.message || 'Error en Resend al enviar correos';
+      let friendlyError = firstErr;
+      if (firstErr.toLowerCase().includes('domain') || firstErr.toLowerCase().includes('not verified') || firstErr.toLowerCase().includes('dkim') || firstErr.toLowerCase().includes('mx')) {
+        friendlyError = 'Resend aún está verificando el dominio grupoconsultio.com en los DNS. Aguarda unos minutos a que figure como "Verified" en tu panel de Resend.';
+      }
+      return res.status(400).json({ success: false, error: friendlyError });
+    }
 
     res.json({
       success: true,
-      message: `Campaña enviada a ${sentCount} de ${activeEmails.length} suscriptores`,
+      message: `Campaña enviada exitosamente a ${sentCount} de ${activeEmails.length} suscriptores`,
       sentCount,
-      failedCount,
+      failedCount: rejectedList.length,
       totalRecipients: activeEmails.length
     });
   } catch (err) {

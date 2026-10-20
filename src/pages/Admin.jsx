@@ -943,6 +943,12 @@ const Admin = () => {
           const em = (item.email || '').toLowerCase();
           if (em && !emails.has(em)) {
             merged.push({ id: 'sub_' + Date.now(), email: em, createdAt: item.date || new Date().toISOString(), status: 'Activo' });
+            // Sincronizar automáticamente hacia el servidor
+            fetch('/api/newsletter', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: em })
+            }).catch(() => {});
           }
         }
         setSubscribersList(merged);
@@ -1053,13 +1059,17 @@ const Admin = () => {
     }
     if (!window.confirm(`¿Confirmas el envío de esta campaña a ${activeCount} suscriptores a través de Resend?`)) return;
 
+    const activeSubs = subscribersList.filter(s => s.status !== 'Inactivo').map(s => s.email);
     setIsSendingBroadcast(true);
     setBroadcastResult(null);
     try {
       const res = await fetch('/api/newsletter/broadcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(broadcastForm)
+        body: JSON.stringify({
+          ...broadcastForm,
+          recipients: activeSubs
+        })
       });
       const data = await res.json();
       if (data.success) {
