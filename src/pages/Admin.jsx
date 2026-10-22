@@ -113,6 +113,17 @@ const INITIAL_CLIENT_WORKS = [
     createdBy: 'grupoconsultio'
   },
   {
+    id: 'work-encuesta-ia-2026',
+    clientFolderId: 'CIQNwadklAnSpJr0JM85',
+    title: 'Encuesta Nacional IA 2026',
+    description: 'Tablero en tiempo real: adopción de herramientas (ChatGPT, Gemini, etc.), confianza ciudadana, impacto electoral y auditoría de sorteo.',
+    sourceType: 'url',
+    url: '/admin/encuesta-ia',
+    category: 'Opinión Pública',
+    createdAt: new Date('2026-10-22').toISOString(),
+    createdBy: 'grupoconsultio'
+  },
+  {
     id: 'work-rio-cuarto-mapa',
     clientFolderId: 'FCSCePtNm4urAxAIMWUA',
     title: 'Encuesta Río Cuarto',

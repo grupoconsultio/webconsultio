@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import pool, { testConnection } from './db.js';
 import XLSX from 'xlsx';
 import sanLuisRouter from './sanluis-routes.js';
+import iaRouter from './ia-routes.js';
 import { Resend } from 'resend';
 
 dotenv.config();
@@ -827,6 +828,9 @@ app.post('/api/upload', async (req, res) => {
 
 // Rutas específicas para Encuesta San Luis 2026 (PostgreSQL)
 app.use('/api/san-luis', sanLuisRouter);
+
+// Rutas específicas para Encuesta Nacional sobre Inteligencia Artificial 2026 (MySQL)
+app.use('/api/ia', iaRouter);
 
 // ==============================================================================
 // GESTIÓN DE CONTACTOS, REUNIONES Y NOTIFICACIONES RESEND
