@@ -1194,12 +1194,21 @@ export default function EncuestaIaDashboard() {
                           #{item.id}
                         </span>
                         <div>
-                          <div className="font-semibold text-white flex items-center gap-2">
+                          <div className="font-semibold text-white flex items-center gap-2 flex-wrap">
                             <span>{item.p13_provincia || 'Provincia'}</span>
                             <span className="text-slate-500">•</span>
                             <span className="text-slate-400 capitalize">{item.p12 || 'Género'}</span>
                             <span className="text-slate-500">•</span>
                             <span className="text-slate-400">{item.p11 ? item.p11.replace('_', ' a ') + ' años' : ''}</span>
+                            {item.is_flagged_speeder ? (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/15 border border-amber-500/30 text-amber-300 font-semibold">
+                                Speeder (&lt;25s)
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-semibold">
+                                Válida
+                              </span>
+                            )}
                           </div>
                           <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2">
                             <span>Herramientas: <strong className="text-purple-300">{item.p2 || 'ChatGPT'}</strong></span>
@@ -1218,7 +1227,11 @@ export default function EncuestaIaDashboard() {
                             {item.created_at ? new Date(item.created_at).toLocaleTimeString('es-AR') : 'Recién'}
                           </div>
                         </div>
-                        <CheckCheck className="w-4 h-4 text-emerald-400" />
+                        {item.is_flagged_speeder ? (
+                          <AlertTriangle className="w-4 h-4 text-amber-400" title="Respuesta rápida (<25 seg)" />
+                        ) : (
+                          <CheckCheck className="w-4 h-4 text-emerald-400" title="Respuesta válida" />
+                        )}
                       </div>
                     </div>
                   ))

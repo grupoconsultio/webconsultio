@@ -31,58 +31,62 @@ function getRegionFromProvincia(prov) {
 
 // Helper para construir cláusulas WHERE dinámicas
 function buildIaWhereClause(query) {
-  const conditions = [];
+  const baseConditions = [];
   const params = [];
 
   const { startDate, endDate, region, provincia, edad, genero, educacion, frecuencia, includeSpeeders } = query;
 
   if (startDate) {
-    conditions.push('created_at >= ?');
+    baseConditions.push('created_at >= ?');
     params.push(startDate + ' 00:00:00');
   }
 
   if (endDate) {
-    conditions.push('created_at <= ?');
+    baseConditions.push('created_at <= ?');
     params.push(endDate + ' 23:59:59');
   }
 
   if (provincia && provincia !== 'Todas') {
-    conditions.push('p13_provincia = ?');
+    baseConditions.push('p13_provincia = ?');
     params.push(provincia);
   } else if (region && region !== 'Todas' && REGIONES[region]) {
     const provs = REGIONES[region];
     const placeholders = provs.map(() => '?').join(',');
-    conditions.push(`p13_provincia IN (${placeholders})`);
+    baseConditions.push(`p13_provincia IN (${placeholders})`);
     params.push(...provs);
   }
 
   if (edad && edad !== 'Todas') {
-    conditions.push('p11_edad = ?');
+    baseConditions.push('p11_edad = ?');
     params.push(edad);
   }
 
   if (genero && genero !== 'Todos' && genero !== 'Todas') {
-    conditions.push('p12_genero = ?');
+    baseConditions.push('p12_genero = ?');
     params.push(genero);
   }
 
   if (educacion && educacion !== 'Todas') {
-    conditions.push('p14_educacion = ?');
+    baseConditions.push('p14_educacion = ?');
     params.push(educacion);
   }
 
   if (frecuencia && frecuencia !== 'Todas') {
-    conditions.push('p1_frecuencia_uso = ?');
+    baseConditions.push('p1_frecuencia_uso = ?');
     params.push(frecuencia);
   }
 
+  const baseWhereSql = baseConditions.length > 0 ? `WHERE ${baseConditions.join(' AND ')}` : '';
+  const baseParams = [...params];
+
+  const fullConditions = [...baseConditions];
   // Filtrado de speeders (< 25 segundos)
   if (includeSpeeders === 'false' || includeSpeeders === false) {
-    conditions.push('(is_flagged_speeder = 0 OR is_flagged_speeder IS NULL)');
+    fullConditions.push('(is_flagged_speeder = 0 OR is_flagged_speeder IS NULL)');
   }
 
-  const whereSql = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  return { whereSql, params };
+  const whereSql = fullConditions.length > 0 ? `WHERE ${fullConditions.join(' AND ')}` : '';
+  return { whereSql, params, baseWhereSql, baseParams };
 }
 
 // 1. Health check & Diagnóstico
@@ -243,14 +247,14 @@ function generateRealisticFallbackData() {
 // 2. Métricas y Estadísticas Globales para el Tablero IA
 router.get('/stats', async (req, res) => {
   try {
-    const { whereSql, params } = buildIaWhereClause(req.query);
+    const { whereSql, params, baseWhereSql, baseParams } = buildIaWhereClause(req.query);
 
     // Intentar consulta a BBDD
     let conn = null;
     let totalSamples = 0;
     try {
       conn = await poolIa.getConnection();
-      const [[countRow]] = await conn.query(`SELECT COUNT(*) as total FROM survey_ia_responses ${whereSql}`, params);
+      const [[countRow]] = await conn.query(`SELECT COUNT(*) as total FROM survey_ia_responses ${baseWhereSql}`, baseParams);
       totalSamples = countRow?.total || 0;
     } catch (e) {
       console.warn('[MySQL IA] Base de datos no conectada para /stats, usando datos analíticos de respaldo:', e.message);
@@ -259,12 +263,12 @@ router.get('/stats', async (req, res) => {
     }
 
     // Si aún no hay respuestas en la tabla, devolver estructura fallback para que el tablero se luzca de entrada
-    if (totalSamples === 0 && !whereSql) {
+    if (totalSamples === 0 && !baseWhereSql) {
       if (conn) conn.release();
       return res.json(generateRealisticFallbackData());
     }
 
-    // a. KPIs
+    // a. KPIs Generales (calculados sobre la base para reflejar total de muestras, cuántas son válidas y cuántas speeders)
     const kpiSql = `
       SELECT 
         COUNT(*) as total_samples,
@@ -273,9 +277,9 @@ router.get('/stats', async (req, res) => {
         ROUND(AVG(duration_seconds), 1) as avg_duration_seconds,
         ROUND(AVG(p4_confianza), 2) as avg_confianza
       FROM survey_ia_responses
-      ${whereSql}
+      ${baseWhereSql}
     `;
-    const [[kpiData]] = await conn.query(kpiSql, params);
+    const [[kpiData]] = await conn.query(kpiSql, baseParams);
 
     // Total de participantes del sorteo
     const [[raffleData]] = await conn.query('SELECT COUNT(*) as total_raffle FROM raffle_ia_participants');
@@ -576,12 +580,12 @@ router.get('/stats', async (req, res) => {
     // Últimas respuestas en vivo
     const [recentResponses] = await conn.query(`
       SELECT id, p1_frecuencia_uso as p1, p2_herramientas as p2, p4_confianza as p4, p7_ayuda_voto as p7,
-             p11_edad as p11, p12_genero as p12, p13_provincia, duration_seconds as dur, created_at
+             p11_edad as p11, p12_genero as p12, p13_provincia, duration_seconds as dur, is_flagged_speeder, created_at
       FROM survey_ia_responses
-      ${whereSql}
+      ${baseWhereSql}
       ORDER BY created_at DESC
       LIMIT 15
-    `, params);
+    `, baseParams);
 
     conn.release();
 
