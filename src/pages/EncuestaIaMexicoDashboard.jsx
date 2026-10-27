@@ -599,7 +599,7 @@ const EncuestaIaMexicoDashboard = () => {
               <ShieldCheck className="w-4 h-4 text-amber-400" />
             </div>
             <div className="text-2xl font-black text-amber-400 flex items-baseline gap-1">
-              <span>{kpis.avgConfianza || '0.0'}</span>
+              <span>{kpis.totalSamples > 0 && kpis.avgConfianza ? Number(kpis.avgConfianza).toFixed(2) : '0.0'}</span>
               <span className="text-xs text-slate-400 font-normal">/ 5</span>
             </div>
             <div className="text-[10px] text-slate-400 mt-1">

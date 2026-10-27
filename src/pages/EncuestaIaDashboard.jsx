@@ -605,7 +605,7 @@ export default function EncuestaIaDashboard() {
               <ShieldCheck className="w-4 h-4 text-amber-400" />
             </div>
             <div className="text-2xl font-black tracking-tight text-amber-300">
-              {kpis.avgConfianza ? Number(kpis.avgConfianza).toFixed(2) : '3.42'} <span className="text-sm font-normal text-slate-400">/ 5</span>
+              {kpis.totalSamples > 0 && kpis.avgConfianza ? Number(kpis.avgConfianza).toFixed(2) : '0.0'} <span className="text-sm font-normal text-slate-400">/ 5</span>
             </div>
             <div className="text-[11px] text-slate-400 mt-1">
               Escala de fiabilidad ciudadana
