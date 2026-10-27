@@ -99,149 +99,44 @@ router.get('/health', async (req, res) => {
   });
 });
 
-// Generador de fallback si la BBDD está vacía o desconectada temporalmente
-function generateRealisticFallbackData() {
-  const totalSamples = 1842;
-  const speedersCount = 68;
-  const validSamples = totalSamples - speedersCount;
-
+// Estructura limpia en 0 cuando la BBDD está iniciando o esperando respuestas
+function getEmptyIaStats() {
   return {
     success: true,
-    isSampleData: true,
+    isSampleData: false,
+    isEmpty: true,
     kpis: {
-      totalSamples,
-      validSamples,
-      speedersCount,
-      avgDurationSeconds: 154,
-      avgConfianza: 3.42,
-      totalRaffleParticipants: 1120
+      totalSamples: 0,
+      validSamples: 0,
+      speedersCount: 0,
+      avgDurationSeconds: 0,
+      avgConfianza: 0,
+      totalRaffleParticipants: 0
     },
-    p1Frecuencia: [
-      { id: 'todos_los_dias', label: 'Todos los días', count: 682, pct: 38.9 },
-      { id: 'varias_veces_semana', label: 'Varias veces por semana', count: 524, pct: 29.9 },
-      { id: 'mes_o_menos', label: 'Alguna vez al mes o menos', count: 286, pct: 16.3 },
-      { id: 'una_o_dos_veces', label: 'La usó una o dos veces', count: 168, pct: 9.6 },
-      { id: 'nunca', label: 'Nunca la usó', count: 94, pct: 5.3 }
-    ],
-    p2Herramientas: [
-      { id: 'chatgpt', label: 'ChatGPT (OpenAI)', count: 1420, pct: 81.0 },
-      { id: 'gemini', label: 'Gemini (Google)', count: 712, pct: 40.6 },
-      { id: 'meta_ai', label: 'Meta AI (WhatsApp/IG)', count: 684, pct: 39.0 },
-      { id: 'copilot', label: 'Copilot (Microsoft)', count: 412, pct: 23.5 },
-      { id: 'deepseek', label: 'DeepSeek', count: 295, pct: 16.8 },
-      { id: 'claude', label: 'Claude (Anthropic)', count: 218, pct: 12.4 },
-      { id: 'grok', label: 'Grok (xAI / X)', count: 184, pct: 10.5 },
-      { id: 'otra', label: 'Otras herramientas', count: 88, pct: 5.0 },
-      { id: 'no_se', label: 'No sabe / No recuerda', count: 42, pct: 2.4 }
-    ],
-    p3Usos: [
-      { id: 'trabajo_estudio', label: 'Trabajo o estudio', count: 1184, pct: 67.5 },
-      { id: 'redactar_textos', label: 'Escribir o redactar textos', count: 968, pct: 55.2 },
-      { id: 'buscar_info', label: 'Buscar info (reemplazo Google)', count: 852, pct: 48.6 },
-      { id: 'programar', label: 'Programar / código', count: 428, pct: 24.4 },
-      { id: 'entretenimiento', label: 'Entretenimiento y creatividad', count: 395, pct: 22.5 },
-      { id: 'noticias_politica', label: 'Noticias o política', count: 362, pct: 20.6 },
-      { id: 'finanzas_compras', label: 'Finanzas o compras', count: 254, pct: 14.5 },
-      { id: 'consejos_personales', label: 'Consejos personales', count: 188, pct: 10.7 },
-      { id: 'salud', label: 'Consultas de salud', count: 142, pct: 8.1 },
-      { id: 'otro', label: 'Otros usos', count: 64, pct: 3.6 }
-    ],
-    p4Confianza: [
-      { rating: 1, label: '1 - Nada de confianza', count: 92, pct: 5.2 },
-      { rating: 2, label: '2 - Poca confianza', count: 248, pct: 14.1 },
-      { rating: 3, label: '3 - Moderada', count: 672, pct: 38.3 },
-      { rating: 4, label: '4 - Bastante confianza', count: 586, pct: 33.4 },
-      { rating: 5, label: '5 - Mucha confianza', count: 156, pct: 8.9 }
-    ],
-    p5Decision: [
-      { id: 'siempre', label: 'Siempre', count: 198, pct: 11.3 },
-      { id: 'a_veces', label: 'A veces', count: 824, pct: 47.0 },
-      { id: 'casi_nunca', label: 'Casi nunca', count: 472, pct: 26.9 },
-      { id: 'nunca', label: 'Nunca', count: 260, pct: 14.8 }
-    ],
-    p6PreguntaPolitica: [
-      { id: 'varias_veces', label: 'Sí, varias veces', count: 418, pct: 23.8 },
-      { id: 'una_vez', label: 'Sí, una vez', count: 352, pct: 20.1 },
-      { id: 'no_pero_haria', label: 'No, pero lo haría', count: 546, pct: 31.1 },
-      { id: 'no_y_no_haria', label: 'No, y no lo haría', count: 438, pct: 25.0 }
-    ],
-    p7AyudaVoto: [
-      { id: 'si_seguro', label: 'Sí, seguro', count: 214, pct: 12.2 },
-      { id: 'tal_vez', label: 'Tal vez', count: 486, pct: 27.7 },
-      { id: 'probablemente_no', label: 'Probablemente no', count: 512, pct: 29.2 },
-      { id: 'no', label: 'No', count: 542, pct: 30.9 }
-    ],
-    p8EnfoqueVoto: [
-      { id: 'propuestas', label: 'Qué propone cada candidato', count: 785, pct: 44.8 },
-      { id: 'verificar_datos', label: 'Verificar si algo es cierto', count: 492, pct: 28.1 },
-      { id: 'conveniencia', label: 'Cuál me conviene según perfil', count: 216, pct: 12.3 },
-      { id: 'a_quien_votar', label: 'Directamente a quién votar', count: 124, pct: 7.1 },
-      { id: 'nada', label: 'Nada, no le preguntaría', count: 137, pct: 7.8 }
-    ],
-    p9InfluenciaVoto: [
-      { id: 'mucho', label: 'Mucho', count: 588, pct: 33.5 },
-      { id: 'algo', label: 'Algo', count: 742, pct: 42.3 },
-      { id: 'poco', label: 'Poco', count: 318, pct: 18.1 },
-      { id: 'nada', label: 'Nada', count: 106, pct: 6.0 }
-    ],
-    p10Neutralidad: [
-      { id: 'totalmente_neutrales', label: 'Totalmente neutrales', count: 142, pct: 8.1 },
-      { id: 'bastante_neutrales', label: 'Bastante neutrales', count: 620, pct: 35.3 },
-      { id: 'algo_sesgadas', label: 'Algo sesgadas', count: 548, pct: 31.2 },
-      { id: 'muy_sesgadas', label: 'Muy sesgadas', count: 284, pct: 16.2 },
-      { id: 'no_se', label: 'No sabe / sin opinión', count: 160, pct: 9.1 }
-    ],
+    p1Frecuencia: [],
+    p2Herramientas: [],
+    p3Usos: [],
+    p4Confianza: [],
+    p5Decision: [],
+    p6PreguntaPolitica: [],
+    p7AyudaVoto: [],
+    p8EnfoqueVoto: [],
+    p9InfluenciaVoto: [],
+    p10Neutralidad: [],
     demographics: {
-      byEdad: [
-        { label: '16 a 24 años', count: 486, pct: 27.7 },
-        { label: '25 a 34 años', count: 612, pct: 34.9 },
-        { label: '35 a 49 años', count: 418, pct: 23.8 },
-        { label: '50 a 64 años', count: 172, pct: 9.8 },
-        { label: '65 años o más', count: 66, pct: 3.8 }
-      ],
-      byGenero: [
-        { label: 'Mujer', count: 894, pct: 51.0 },
-        { label: 'Varón', count: 812, pct: 46.3 },
-        { label: 'Otro / No especifica', count: 48, pct: 2.7 }
-      ],
-      byEducacion: [
-        { label: 'Hasta primaria', count: 72, pct: 4.1 },
-        { label: 'Secundaria', count: 586, pct: 33.4 },
-        { label: 'Terciario / Univ. incompleto', count: 494, pct: 28.2 },
-        { label: 'Terciario / Univ. completo', count: 602, pct: 34.3 }
-      ],
-      byRegion: [
-        { region: 'Centro', count: 624, pct: 35.6 },
-        { region: 'CABA', count: 388, pct: 22.1 },
-        { region: 'GBA', count: 345, pct: 19.7 },
-        { region: 'Cuyo', count: 162, pct: 9.2 },
-        { region: 'NOA', count: 114, pct: 6.5 },
-        { region: 'Patagonia', count: 72, pct: 4.1 },
-        { region: 'NEA', count: 49, pct: 2.8 }
-      ],
-      byProvincia: [
-        { provincia: 'Buenos Aires', count: 486 },
-        { provincia: 'Ciudad Autónoma de Buenos Aires (CABA)', count: 388 },
-        { provincia: 'Córdoba', count: 312 },
-        { provincia: 'Santa Fe', count: 218 },
-        { provincia: 'Mendoza', count: 112 },
-        { provincia: 'Entre Ríos', count: 94 },
-        { provincia: 'Tucumán', count: 52 },
-        { provincia: 'Salta', count: 46 },
-        { provincia: 'San Juan', count: 36 },
-        { provincia: 'Río Negro', count: 28 },
-        { provincia: 'Neuquén', count: 26 },
-        { provincia: 'San Luis', count: 24 }
-      ]
+      byEdad: [],
+      byGenero: [],
+      byEducacion: [],
+      byRegion: [],
+      byProvincia: []
     },
-    recentResponses: [
-      { id: 1842, p1: 'todos_los_dias', p2: 'chatgpt,gemini', p4: 4, p7: 'tal_vez', p11: '25_34', p12: 'mujer', p13_provincia: 'Córdoba', dur: 142, created_at: new Date(Date.now() - 3 * 60000).toISOString() },
-      { id: 1841, p1: 'todos_los_dias', p2: 'chatgpt,claude', p4: 5, p7: 'si_seguro', p11: '16_24', p12: 'varon', p13_provincia: 'CABA', dur: 185, created_at: new Date(Date.now() - 8 * 60000).toISOString() },
-      { id: 1840, p1: 'varias_veces_semana', p2: 'meta_ai,chatgpt', p4: 3, p7: 'probablemente_no', p11: '35_49', p12: 'mujer', p13_provincia: 'Buenos Aires', dur: 210, created_at: new Date(Date.now() - 15 * 60000).toISOString() },
-      { id: 1839, p1: 'mes_o_menos', p2: 'chatgpt', p4: 3, p7: 'no', p11: '50_64', p12: 'varon', p13_provincia: 'Santa Fe', dur: 160, created_at: new Date(Date.now() - 22 * 60000).toISOString() },
-      { id: 1838, p1: 'todos_los_dias', p2: 'chatgpt,deepseek,copilot', p4: 4, p7: 'si_seguro', p11: '25_34', p12: 'varon', p13_provincia: 'Mendoza', dur: 198, created_at: new Date(Date.now() - 35 * 60000).toISOString() }
-    ]
+    recentResponses: []
   };
+}
+
+// Generador de fallback si la BBDD está vacía o desconectada temporalmente (mantenido solo por retrocompatibilidad)
+function generateRealisticFallbackData() {
+  return getEmptyIaStats();
 }
 
 // 2. Métricas y Estadísticas Globales para el Tablero IA
@@ -257,16 +152,24 @@ router.get('/stats', async (req, res) => {
       const [[countRow]] = await conn.query(`SELECT COUNT(*) as total FROM survey_ia_responses ${baseWhereSql}`, baseParams);
       totalSamples = countRow?.total || 0;
     } catch (e) {
-      console.warn('[MySQL IA] Base de datos no conectada para /stats, usando datos analíticos de respaldo:', e.message);
+      console.warn('[MySQL IA] Base de datos no conectada para /stats:', e.message);
       if (conn) conn.release();
-      return res.json(generateRealisticFallbackData());
+      return res.json(getEmptyIaStats());
     }
 
-    // Si aún no hay respuestas en la tabla, devolver estructura fallback para que el tablero se luzca de entrada
-    if (totalSamples === 0 && !baseWhereSql) {
+    // Si aún no hay respuestas en la tabla, devolver estructura limpia en 0
+    if (totalSamples === 0) {
+      let raffleTotal = 0;
+      try {
+        const [[raffleData]] = await conn.query('SELECT COUNT(*) as total_raffle FROM raffle_ia_participants');
+        raffleTotal = raffleData?.total_raffle || 0;
+      } catch {}
       if (conn) conn.release();
-      return res.json(generateRealisticFallbackData());
+      const emptyData = getEmptyIaStats();
+      emptyData.kpis.totalRaffleParticipants = raffleTotal;
+      return res.json(emptyData);
     }
+
 
     // a. KPIs Generales (calculados sobre la base para reflejar total de muestras, cuántas son válidas y cuántas speeders)
     const kpiSql = `
@@ -640,15 +543,11 @@ router.get('/raffle', async (req, res) => {
       // Fallback si no hay conexión
       return res.json({
         success: true,
-        total: 12,
+        total: 0,
         page: 1,
-        limit: 50,
+        limit,
         totalPages: 1,
-        participants: [
-          { id: 1, response_token: 'resp_ia_demo_01', dni: '742', email: 'participante1@demo.com', participated_at: new Date().toISOString() },
-          { id: 2, response_token: 'resp_ia_demo_02', dni: '891', email: 'participante2@demo.com', participated_at: new Date().toISOString() },
-          { id: 3, response_token: 'resp_ia_demo_03', dni: '320', email: 'participante3@demo.com', participated_at: new Date().toISOString() }
-        ]
+        participants: []
       });
     }
 

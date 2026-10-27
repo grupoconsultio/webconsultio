@@ -115,12 +115,23 @@ const INITIAL_CLIENT_WORKS = [
   {
     id: 'work-encuesta-ia-2026',
     clientFolderId: 'CIQNwadklAnSpJr0JM85',
-    title: 'Encuesta Nacional IA 2026',
+    title: 'Encuesta Nacional IA 2026 (Argentina)',
     description: 'Tablero en tiempo real: adopción de herramientas (ChatGPT, Gemini, etc.), confianza ciudadana, impacto electoral y auditoría de sorteo.',
     sourceType: 'url',
     url: '/admin/encuesta-ia',
     category: 'Opinión Pública',
     createdAt: new Date('2026-10-22').toISOString(),
+    createdBy: 'grupoconsultio'
+  },
+  {
+    id: 'work-encuesta-ia-mexico-2026',
+    clientFolderId: 'CIQNwadklAnSpJr0JM85',
+    title: 'Encuesta Nacional IA México 2026',
+    description: 'Tablero en tiempo real: adopción de IA en México, 32 entidades federativas, confianza ciudadana, impacto electoral y sorteo 200 USD.',
+    sourceType: 'url',
+    url: '/admin/encuesta-ia-mexico',
+    category: 'Opinión Pública',
+    createdAt: new Date('2026-10-27').toISOString(),
     createdBy: 'grupoconsultio'
   },
   {

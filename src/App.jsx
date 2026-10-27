@@ -14,6 +14,7 @@ import EncuestaPapaDashboard from './pages/EncuestaPapaDashboard';
 import EncuestaSanLuisDashboard from './pages/EncuestaSanLuisDashboard';
 import EncuestaRioTerceroDashboard from './pages/EncuestaRioTerceroDashboard';
 import EncuestaIaDashboard from './pages/EncuestaIaDashboard';
+import EncuestaIaMexicoDashboard from './pages/EncuestaIaMexicoDashboard';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import { motion, useScroll, useSpring } from 'framer-motion';
@@ -102,6 +103,8 @@ function App() {
         <Route path="/encuesta-rio-tercero" element={<EncuestaRioTerceroDashboard />} />
         <Route path="/admin/encuesta-ia" element={<ProtectedRoute><EncuestaIaDashboard /></ProtectedRoute>} />
         <Route path="/encuesta-ia" element={<EncuestaIaDashboard />} />
+        <Route path="/admin/encuesta-ia-mexico" element={<ProtectedRoute><EncuestaIaMexicoDashboard /></ProtectedRoute>} />
+        <Route path="/encuesta-ia-mexico" element={<EncuestaIaMexicoDashboard />} />
         <Route path="/demos" element={<><Navbar /><Demos /><Footer /></>} />
         <Route path="/mapa" element={<ProtectedRoute><MapaIndicadores /></ProtectedRoute>} />
         <Route path="/terminos" element={<><Navbar /><TermsOfService /><Footer /></>} />

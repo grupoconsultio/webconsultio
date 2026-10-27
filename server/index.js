@@ -8,6 +8,7 @@ import pool, { testConnection } from './db.js';
 import XLSX from 'xlsx';
 import sanLuisRouter from './sanluis-routes.js';
 import iaRouter from './ia-routes.js';
+import iaMexicoRouter from './ia-mexico-routes.js';
 import { Resend } from 'resend';
 
 dotenv.config();
@@ -829,8 +830,11 @@ app.post('/api/upload', async (req, res) => {
 // Rutas específicas para Encuesta San Luis 2026 (PostgreSQL)
 app.use('/api/san-luis', sanLuisRouter);
 
-// Rutas específicas para Encuesta Nacional sobre Inteligencia Artificial 2026 (MySQL)
+// Rutas específicas para Encuesta Nacional sobre Inteligencia Artificial 2026 (Argentina)
 app.use('/api/ia', iaRouter);
+
+// Rutas específicas para Encuesta Nacional sobre Inteligencia Artificial 2026 (México)
+app.use('/api/ia-mexico', iaMexicoRouter);
 
 // ==============================================================================
 // GESTIÓN DE CONTACTOS, REUNIONES Y NOTIFICACIONES RESEND

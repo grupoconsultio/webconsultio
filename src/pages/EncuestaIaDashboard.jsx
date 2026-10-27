@@ -404,12 +404,12 @@ export default function EncuestaIaDashboard() {
         </div>
       </header>
 
-      {/* BANNER INFORMATIVO SI SE ESTÁN USANDO DATOS ANALÍTICOS DE MUESTRA */}
-      {statsData?.isSampleData && (
-        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 text-center text-xs text-amber-300 flex items-center justify-center gap-2">
-          <Sparkles className="w-4 h-4 text-amber-400" />
+      {/* BANNER DE ESTADO EN VIVO SI LA BBDD ESTÁ EN CERO ESPERANDO RESPUESTAS */}
+      {kpis.totalSamples === 0 && (
+        <div className="bg-cyan-500/10 border-b border-cyan-500/20 px-4 py-2.5 text-center text-xs text-cyan-300 flex items-center justify-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping inline-block" />
           <span>
-            <strong>Vista de demostración activa:</strong> Mostrando matriz estadística simulada mientras se reciben las primeras respuestas en la base de datos MySQL en vivo.
+            <strong>Recepción en vivo activa:</strong> Base de datos MySQL conectada. Aguardando el ingreso de las primeras respuestas de la encuesta en Argentina.
           </span>
         </div>
       )}
@@ -679,24 +679,31 @@ export default function EncuestaIaDashboard() {
                   <BarChart3 className="w-4 h-4 text-slate-400" />
                 </div>
 
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={statsData.p1Frecuencia} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" horizontal={false} />
-                      <XAxis type="number" unit="%" domain={[0, 'dataMax + 10']} tick={{ fill: '#94a3b8', fontSize: 11 }} />
-                      <YAxis type="category" dataKey="label" width={140} tick={{ fill: '#e2e8f0', fontSize: 11 }} />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#0B132B', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '12px' }}
-                        formatter={(val, name, item) => [`${val}% (${item.payload.count} respuestas)`, 'Porcentaje']}
-                      />
-                      <Bar dataKey="pct" radius={[0, 8, 8, 0]}>
-                        {statsData.p1Frecuencia.map((entry, index) => (
-                          <Cell key={`p1-cell-${index}`} fill={index === 0 ? COLORS.cyan : index === 1 ? COLORS.purple : COLORS.blue} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                {statsData.p1Frecuencia?.length > 0 ? (
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={statsData.p1Frecuencia} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" horizontal={false} />
+                        <XAxis type="number" unit="%" domain={[0, 'dataMax + 10']} tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                        <YAxis type="category" dataKey="label" width={140} tick={{ fill: '#e2e8f0', fontSize: 11 }} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#0B132B', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '12px' }}
+                          formatter={(val, name, item) => [`${val}% (${item.payload.count} respuestas)`, 'Porcentaje']}
+                        />
+                        <Bar dataKey="pct" radius={[0, 8, 8, 0]}>
+                          {statsData.p1Frecuencia.map((entry, index) => (
+                            <Cell key={`p1-cell-${index}`} fill={index === 0 ? COLORS.cyan : index === 1 ? COLORS.purple : COLORS.blue} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-64 flex flex-col items-center justify-center text-slate-500 text-xs">
+                    <BarChart3 className="w-8 h-8 text-slate-600 mb-2 animate-pulse" />
+                    <span>Aguardando primeras respuestas registradas para P1...</span>
+                  </div>
+                )}
               </div>
 
               {/* P2: Herramientas Más Populares */}
@@ -709,24 +716,31 @@ export default function EncuestaIaDashboard() {
                   <Bot className="w-4 h-4 text-purple-400" />
                 </div>
 
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={statsData.p2Herramientas} margin={{ top: 10, right: 10, left: -10, bottom: 25 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                      <XAxis dataKey="id" tick={{ fill: '#94a3b8', fontSize: 10 }} interval={0} angle={-30} textAnchor="end" />
-                      <YAxis unit="%" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#0B132B', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '12px' }}
-                        formatter={(val, name, item) => [`${val}% (${item.payload.count} usuarios)`, item.payload.label]}
-                      />
-                      <Bar dataKey="pct" radius={[8, 8, 0, 0]}>
-                        {statsData.p2Herramientas.map((entry, index) => (
-                          <Cell key={`p2-cell-${index}`} fill={PIE_PALETTE[index % PIE_PALETTE.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                {statsData.p2Herramientas?.length > 0 ? (
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={statsData.p2Herramientas} margin={{ top: 10, right: 10, left: -10, bottom: 25 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                        <XAxis dataKey="id" tick={{ fill: '#94a3b8', fontSize: 10 }} interval={0} angle={-30} textAnchor="end" />
+                        <YAxis unit="%" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#0B132B', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '12px' }}
+                          formatter={(val, name, item) => [`${val}% (${item.payload.count} usuarios)`, item.payload.label]}
+                        />
+                        <Bar dataKey="pct" radius={[8, 8, 0, 0]}>
+                          {statsData.p2Herramientas.map((entry, index) => (
+                            <Cell key={`p2-cell-${index}`} fill={PIE_PALETTE[index % PIE_PALETTE.length]} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-64 flex flex-col items-center justify-center text-slate-500 text-xs">
+                    <Bot className="w-8 h-8 text-slate-600 mb-2 animate-pulse" />
+                    <span>Aguardando primeras respuestas registradas para P2...</span>
+                  </div>
+                )}
               </div>
 
             </div>
@@ -741,27 +755,34 @@ export default function EncuestaIaDashboard() {
                 <Briefcase className="w-4 h-4 text-emerald-400" />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {statsData.p3Usos.map((uso, idx) => (
-                  <div key={uso.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xs border border-emerald-500/20">
-                        {idx + 1}
-                      </span>
-                      <div>
-                        <div className="text-xs font-semibold text-white">{uso.label}</div>
-                        <div className="text-[11px] text-slate-400">{uso.count} menciones</div>
+              {statsData.p3Usos?.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {statsData.p3Usos.map((uso, idx) => (
+                    <div key={uso.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xs border border-emerald-500/20">
+                          {idx + 1}
+                        </span>
+                        <div>
+                          <div className="text-xs font-semibold text-white">{uso.label}</div>
+                          <div className="text-[11px] text-slate-400">{uso.count} menciones</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-extrabold text-emerald-400">{uso.pct}%</span>
+                        <div className="w-20 bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1">
+                          <div className="bg-emerald-400 h-full rounded-full" style={{ width: `${uso.pct}%` }} />
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-sm font-extrabold text-emerald-400">{uso.pct}%</span>
-                      <div className="w-20 bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1">
-                        <div className="bg-emerald-400 h-full rounded-full" style={{ width: `${uso.pct}%` }} />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-12 text-center text-slate-500 text-xs">
+                  <Briefcase className="w-8 h-8 text-slate-600 mx-auto mb-2 animate-pulse" />
+                  <span>Aguardando primeras respuestas registradas para P3...</span>
+                </div>
+              )}
             </div>
 
           </div>
