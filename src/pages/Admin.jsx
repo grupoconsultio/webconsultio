@@ -141,49 +141,49 @@ const selectCls = "w-full bg-[#131B2E] border border-white/10 rounded-xl px-4 py
 const textareaCls = "w-full bg-[#131B2E] border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--color-brand-cyan)] transition-colors text-white placeholder-slate-500 resize-none";
 
 const Admin = () => {
-  const [activeTab, setActiveTab]         = useState('works'); // 'works' | 'users'
-  const [sidebarOpen, setSidebarOpen]     = useState(false);
-  
+  const [activeTab, setActiveTab] = useState('works'); // 'works' | 'users'
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   // Roles y Usuarios
-  const [userRole, setUserRole]           = useState('administrador');
-  const [userName, setUserName]           = useState('grupoconsultio');
-  const [appUsers, setAppUsers]           = useState([]);
-  const [newUser, setNewUser]             = useState({ username: '', password: '', role: 'lector' });
+  const [userRole, setUserRole] = useState('administrador');
+  const [userName, setUserName] = useState('grupoconsultio');
+  const [appUsers, setAppUsers] = useState([]);
+  const [newUser, setNewUser] = useState({ username: '', password: '', role: 'lector' });
 
   // Contactos, Reuniones y Suscriptores
-  const [contactsList, setContactsList]                   = useState([]);
-  const [contactSearch, setContactSearch]                 = useState('');
-  const [contactTypeFilter, setContactTypeFilter]         = useState('todos'); // 'todos' | 'reunion' | 'contacto'
-  const [contactStatusFilter, setContactStatusFilter]     = useState('todos');
-  const [subscribersList, setSubscribersList]             = useState([]);
-  const [subscriberSearch, setSubscriberSearch]           = useState('');
-  const [copiedAllSubs, setCopiedAllSubs]                 = useState(false);
-  const [isLoadingContacts, setIsLoadingContacts]         = useState(false);
-  const [isLoadingSubs, setIsLoadingSubs]                 = useState(false);
-  const [showBroadcastModal, setShowBroadcastModal]       = useState(false);
-  const [broadcastForm, setBroadcastForm]                 = useState({ subject: '', title: '', content: '' });
-  const [isSendingBroadcast, setIsSendingBroadcast]       = useState(false);
-  const [broadcastResult, setBroadcastResult]             = useState(null);
+  const [contactsList, setContactsList] = useState([]);
+  const [contactSearch, setContactSearch] = useState('');
+  const [contactTypeFilter, setContactTypeFilter] = useState('todos'); // 'todos' | 'reunion' | 'contacto'
+  const [contactStatusFilter, setContactStatusFilter] = useState('todos');
+  const [subscribersList, setSubscribersList] = useState([]);
+  const [subscriberSearch, setSubscriberSearch] = useState('');
+  const [copiedAllSubs, setCopiedAllSubs] = useState(false);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false);
+  const [isLoadingSubs, setIsLoadingSubs] = useState(false);
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+  const [broadcastForm, setBroadcastForm] = useState({ subject: '', title: '', content: '' });
+  const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState(null);
 
   // Carpetas de clientes y Trabajos
   const [clientFolders, setClientFolders] = useState([]);
-  const [clientWorks, setClientWorks]     = useState([]);
+  const [clientWorks, setClientWorks] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState(null);
-  const [folderSearch, setFolderSearch]   = useState('');
-  const [workFilter, setWorkFilter]       = useState('todos'); // 'todos' | 'file' | 'url' | 'github'
-  const [workSearch, setWorkSearch]       = useState('');
+  const [folderSearch, setFolderSearch] = useState('');
+  const [workFilter, setWorkFilter] = useState('todos'); // 'todos' | 'file' | 'url' | 'github'
+  const [workSearch, setWorkSearch] = useState('');
 
   // Modales
-  const [showAddFolderModal, setShowAddFolderModal]   = useState(false);
+  const [showAddFolderModal, setShowAddFolderModal] = useState(false);
   const [showEditFolderModal, setShowEditFolderModal] = useState(false);
-  const [editingFolder, setEditingFolder]             = useState(null);
+  const [editingFolder, setEditingFolder] = useState(null);
 
-  const [showAddWorkModal, setShowAddWorkModal]       = useState(false);
-  const [showEditWorkModal, setShowEditWorkModal]     = useState(false);
-  const [editingWork, setEditingWork]                 = useState(null);
-  const [editingWorkFileObj, setEditingWorkFileObj]   = useState(null);
+  const [showAddWorkModal, setShowAddWorkModal] = useState(false);
+  const [showEditWorkModal, setShowEditWorkModal] = useState(false);
+  const [editingWork, setEditingWork] = useState(null);
+  const [editingWorkFileObj, setEditingWorkFileObj] = useState(null);
 
-  const [deleteConfirmModal, setDeleteConfirmModal]   = useState({
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState({
     isOpen: false,
     type: null, // 'folder' | 'work'
     id: null,
@@ -191,7 +191,7 @@ const Admin = () => {
     message: ''
   });
 
-  const [activePreviewWork, setActivePreviewWork]     = useState(null); // Modal de visualización
+  const [activePreviewWork, setActivePreviewWork] = useState(null); // Modal de visualización
   const [isFullscreenPreview, setIsFullscreenPreview] = useState(false);
 
   // Formulario Nuevo Cliente / Carpeta
@@ -215,20 +215,20 @@ const Admin = () => {
     githubUrl: ''
   });
   const [uploadedFileObj, setUploadedFileObj] = useState(null);
-  const [isUploading, setIsUploading]         = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // ═══════════════════════════════════════════════════════════════
   // INTEGRACIÓN CON GITHUB (Idéntica al proyecto de referencia)
   const DEFAULT_GITHUB_TOKEN = ['gh' + 'p', '2mXrEegddUE81vq3yngV9sGVGavB9K1hDrR2'].join('_');
-  const [githubToken, setGithubToken]         = useState(() => sessionStorage.getItem('github_token') || localStorage.getItem('github_token') || DEFAULT_GITHUB_TOKEN);
-  const [githubUser, setGithubUser]           = useState(() => sessionStorage.getItem('github_user') || localStorage.getItem('github_user') || 'grupoconsultio');
-  const [githubRepos, setGithubRepos]         = useState([]);
-  const [githubBranches, setGithubBranches]   = useState(['main']);
-  const [isLoadingRepos, setIsLoadingRepos]   = useState(false);
+  const [githubToken, setGithubToken] = useState(() => sessionStorage.getItem('github_token') || localStorage.getItem('github_token') || DEFAULT_GITHUB_TOKEN);
+  const [githubUser, setGithubUser] = useState(() => sessionStorage.getItem('github_user') || localStorage.getItem('github_user') || 'grupoconsultio');
+  const [githubRepos, setGithubRepos] = useState([]);
+  const [githubBranches, setGithubBranches] = useState(['main']);
+  const [isLoadingRepos, setIsLoadingRepos] = useState(false);
   const [isLoadingBranches, setIsLoadingBranches] = useState(false);
   const [showGithubConnectModal, setShowGithubConnectModal] = useState(false);
-  const [tokenInput, setTokenInput]           = useState('');
-  const [tokenError, setTokenError]           = useState('');
+  const [tokenInput, setTokenInput] = useState('');
+  const [tokenError, setTokenError] = useState('');
 
   const navigate = useNavigate();
 
@@ -279,7 +279,7 @@ const Admin = () => {
         }
 
         setClientFolders(list);
-        try { localStorage.setItem('clientFolders', JSON.stringify(list)); } catch (e) {}
+        try { localStorage.setItem('clientFolders', JSON.stringify(list)); } catch (e) { }
       } catch (err) {
         console.warn('Fallo al obtener carpetas de Firestore, usando cache:', err);
         const stored = JSON.parse(localStorage.getItem('clientFolders') || '[]');
@@ -298,7 +298,7 @@ const Admin = () => {
         // Eliminar el test Informe Ejecutivo de Opinión Pública (Q1) si existe en Firestore
         const testItem = list.find(item => item.id === 'work-rio-cuarto-informe' || (item.title || '').includes('Informe Ejecutivo de Opinión Pública'));
         if (testItem) {
-          try { await deleteDoc(doc(db, 'client_works', testItem.id)); } catch (e) {}
+          try { await deleteDoc(doc(db, 'client_works', testItem.id)); } catch (e) { }
           list = list.filter(item => item.id !== 'work-rio-cuarto-informe' && !(item.title || '').includes('Informe Ejecutivo de Opinión Pública'));
         }
 
@@ -326,7 +326,7 @@ const Admin = () => {
         }
 
         setClientWorks(list);
-        try { localStorage.setItem('clientWorks', JSON.stringify(list)); } catch (e) {}
+        try { localStorage.setItem('clientWorks', JSON.stringify(list)); } catch (e) { }
       } catch (err) {
         console.warn('Fallo al obtener trabajos de Firestore, usando cache:', err);
         const stored = JSON.parse(localStorage.getItem('clientWorks') || '[]');
@@ -515,12 +515,12 @@ const Admin = () => {
       const created = { ...folderObj, id: docRef.id };
       const updated = [created, ...clientFolders];
       setClientFolders(updated);
-      try { localStorage.setItem('clientFolders', JSON.stringify(updated)); } catch (e) {}
+      try { localStorage.setItem('clientFolders', JSON.stringify(updated)); } catch (e) { }
     } catch (err) {
       const created = { ...folderObj, id: `folder-${Date.now()}` };
       const updated = [created, ...clientFolders];
       setClientFolders(updated);
-      try { localStorage.setItem('clientFolders', JSON.stringify(updated)); } catch (e) {}
+      try { localStorage.setItem('clientFolders', JSON.stringify(updated)); } catch (e) { }
     }
 
     setNewFolder({ name: '', assignedUsers: ['grupoconsultio'], industry: '', description: '' });
@@ -558,7 +558,7 @@ const Admin = () => {
 
     const updatedFolders = clientFolders.map(f => f.id === editingFolder.id ? { ...f, ...updatedData } : f);
     setClientFolders(updatedFolders);
-    try { localStorage.setItem('clientFolders', JSON.stringify(updatedFolders)); } catch (e) {}
+    try { localStorage.setItem('clientFolders', JSON.stringify(updatedFolders)); } catch (e) { }
 
     if (selectedFolder?.id === editingFolder.id) {
       setSelectedFolder({ ...selectedFolder, ...updatedData });
@@ -607,15 +607,15 @@ const Admin = () => {
           deletedIds.push(id);
           localStorage.setItem('deletedFolderIds', JSON.stringify(deletedIds));
         }
-      } catch (e) {}
+      } catch (e) { }
 
       const updatedFolders = clientFolders.filter(f => f.id !== id);
       setClientFolders(updatedFolders);
-      try { localStorage.setItem('clientFolders', JSON.stringify(updatedFolders)); } catch (e) {}
+      try { localStorage.setItem('clientFolders', JSON.stringify(updatedFolders)); } catch (e) { }
 
       const updatedWorks = clientWorks.filter(w => w.clientFolderId !== id);
       setClientWorks(updatedWorks);
-      try { localStorage.setItem('clientWorks', JSON.stringify(updatedWorks)); } catch (e) {}
+      try { localStorage.setItem('clientWorks', JSON.stringify(updatedWorks)); } catch (e) { }
 
       if (selectedFolder?.id === id) {
         setSelectedFolder(null);
@@ -633,11 +633,11 @@ const Admin = () => {
           deletedIds.push(id);
           localStorage.setItem('deletedWorkIds', JSON.stringify(deletedIds));
         }
-      } catch (e) {}
+      } catch (e) { }
 
       const updated = clientWorks.filter(w => w.id !== id);
       setClientWorks(updated);
-      try { localStorage.setItem('clientWorks', JSON.stringify(updated)); } catch (e) {}
+      try { localStorage.setItem('clientWorks', JSON.stringify(updated)); } catch (e) { }
 
       if (activePreviewWork?.id === id) {
         setActivePreviewWork(null);
@@ -761,12 +761,12 @@ const Admin = () => {
         const created = { ...workObj, id: docRef.id };
         const updated = [created, ...clientWorks];
         setClientWorks(updated);
-        try { localStorage.setItem('clientWorks', JSON.stringify(updated)); } catch (e) {}
+        try { localStorage.setItem('clientWorks', JSON.stringify(updated)); } catch (e) { }
       } catch (err) {
         const created = { ...workObj, id: `work-${Date.now()}` };
         const updated = [created, ...clientWorks];
         setClientWorks(updated);
-        try { localStorage.setItem('clientWorks', JSON.stringify(updated)); } catch (e) {}
+        try { localStorage.setItem('clientWorks', JSON.stringify(updated)); } catch (e) { }
       }
 
       setNewWork({
@@ -838,7 +838,7 @@ const Admin = () => {
 
       const updatedWorks = clientWorks.map(w => w.id === editingWork.id ? { ...w, ...updatedData } : w);
       setClientWorks(updatedWorks);
-      try { localStorage.setItem('clientWorks', JSON.stringify(updatedWorks)); } catch (e) {}
+      try { localStorage.setItem('clientWorks', JSON.stringify(updatedWorks)); } catch (e) { }
 
       if (activePreviewWork?.id === editingWork.id) {
         setActivePreviewWork({ ...activePreviewWork, ...updatedData });
@@ -918,7 +918,7 @@ const Admin = () => {
     let localData = [];
     try {
       localData = JSON.parse(localStorage.getItem('contactSubmissions') || '[]');
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       const res = await fetch('/api/contacts');
@@ -946,7 +946,7 @@ const Admin = () => {
     let localSubs = [];
     try {
       localSubs = JSON.parse(localStorage.getItem('newsletterSubs') || '[]');
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       const res = await fetch('/api/newsletter');
@@ -963,14 +963,14 @@ const Admin = () => {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email: em })
-            }).catch(() => {});
+            }).catch(() => { });
           }
         }
         setSubscribersList(merged);
         setIsLoadingSubs(false);
         return;
       }
-    } catch (err) {}
+    } catch (err) { }
     setSubscribersList(localSubs.map((s, idx) => ({ id: 'sub_' + idx, email: s.email, createdAt: s.date || new Date().toISOString(), status: 'Activo' })));
     setIsLoadingSubs(false);
   };
@@ -990,7 +990,7 @@ const Admin = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
       });
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const handleDeleteContact = async (id) => {
@@ -1000,7 +1000,7 @@ const Admin = () => {
     localStorage.setItem('contactSubmissions', JSON.stringify(updated));
     try {
       await fetch(`/api/contacts/${id}`, { method: 'DELETE' });
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const handleDeleteSubscriber = async (email) => {
@@ -1012,7 +1012,7 @@ const Admin = () => {
       const local = JSON.parse(localStorage.getItem('newsletterSubs') || '[]').filter(s => s.email.toLowerCase() !== cleanEmail);
       localStorage.setItem('newsletterSubs', JSON.stringify(local));
       await fetch(`/api/newsletter/${encodeURIComponent(cleanEmail)}`, { method: 'DELETE' });
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const handleCopyAllSubscribers = () => {
@@ -1106,11 +1106,11 @@ const Admin = () => {
   const navItems = userRole === 'lector'
     ? [{ key: 'works', label: 'Trabajos', icon: Briefcase }]
     : [
-        { key: 'works', label: 'Trabajos', icon: Briefcase },
-        { key: 'contacts', label: 'Contactos & Reuniones', icon: Mail },
-        { key: 'subscribers', label: 'Suscripciones Insights', icon: Send },
-        { key: 'users', label: 'Usuarios', icon: ShieldCheck }
-      ];
+      { key: 'works', label: 'Trabajos', icon: Briefcase },
+      { key: 'contacts', label: 'Contactos & Reuniones', icon: Mail },
+      { key: 'subscribers', label: 'Suscripciones Insights', icon: Send },
+      { key: 'users', label: 'Usuarios', icon: ShieldCheck }
+    ];
 
   // Carpetas accesibles para el usuario actual
   const accessibleFolders = clientFolders.filter(folder => {
@@ -1132,11 +1132,11 @@ const Admin = () => {
   // Trabajos de la carpeta seleccionada (soporta coincidencia por ID y por nombre para carpetas maestras)
   const folderWorks = selectedFolder
     ? clientWorks.filter(w => {
-        if (w.clientFolderId === selectedFolder.id) return true;
-        if ((selectedFolder.name || '').toLowerCase() === 'consultio' && (w.clientFolderId === 'folder-consultio' || (w.title || '').toLowerCase().includes('visita papal'))) return true;
-        if ((selectedFolder.name || '').toLowerCase().includes('río cuarto') && (w.clientFolderId === 'folder-rio-cuarto' || (w.title || '').toLowerCase().includes('río cuarto'))) return true;
-        return false;
-      })
+      if (w.clientFolderId === selectedFolder.id) return true;
+      if ((selectedFolder.name || '').toLowerCase() === 'consultio' && (w.clientFolderId === 'folder-consultio' || (w.title || '').toLowerCase().includes('visita papal'))) return true;
+      if ((selectedFolder.name || '').toLowerCase().includes('río cuarto') && (w.clientFolderId === 'folder-rio-cuarto' || (w.title || '').toLowerCase().includes('río cuarto'))) return true;
+      return false;
+    })
     : [];
 
   const filteredWorks = folderWorks.filter(w => {
@@ -1204,14 +1204,14 @@ const Admin = () => {
       const repo = parts[1] || '';
       const branch = (work.githubBranch || 'main').trim();
       const filePath = (work.githubPath || 'index.html').trim();
-      
+
       const savedToken = typeof localStorage !== 'undefined'
         ? (localStorage.getItem('github_token') || sessionStorage.getItem('github_token') || DEFAULT_GITHUB_TOKEN)
         : DEFAULT_GITHUB_TOKEN;
       const tokenQuery = savedToken ? `?token=${encodeURIComponent(savedToken)}` : '';
-      
+
       let decodedPath = filePath;
-      try { decodedPath = decodeURIComponent(filePath); } catch (e) {}
+      try { decodedPath = decodeURIComponent(filePath); } catch (e) { }
       const safePath = decodedPath.split('/').map(segment => encodeURIComponent(segment)).join('/');
       return `/api/github/proxy/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${encodeURIComponent(branch)}/${safePath}${tokenQuery}`;
     }
@@ -1225,10 +1225,10 @@ const Admin = () => {
       {/* ── SIDEBAR DE NAVEGACIÓN ────────────────────────── */}
       <aside className={`fixed lg:static inset-y-0 left-0 z-30 w-64 bg-brand-surface border-r border-white/5 flex flex-col p-6 transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="mb-8 flex items-center justify-between">
-          <img 
-            src="/brand/logo-color-white.png" 
-            alt="Grupo Consultio" 
-            className="h-8 w-auto object-contain" 
+          <img
+            src="/brand/logo-color-white.png"
+            alt="Grupo Consultio"
+            className="h-8 w-auto object-contain"
           />
           <button className="lg:hidden p-1 text-brand-secondary hover:text-white" onClick={() => setSidebarOpen(false)}>
             <X size={20} />
@@ -1253,11 +1253,10 @@ const Admin = () => {
             <button
               key={key}
               onClick={() => handleTabChange(key)}
-              className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left font-medium text-sm ${
-                activeTab === key
-                  ? 'bg-[var(--color-brand-cyan)]/10 text-[var(--color-brand-cyan)] border border-[var(--color-brand-cyan)]/20 shadow-sm'
-                  : 'text-brand-secondary hover:text-white hover:bg-white/5 border border-transparent'
-              }`}
+              className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left font-medium text-sm ${activeTab === key
+                ? 'bg-[var(--color-brand-cyan)]/10 text-[var(--color-brand-cyan)] border border-[var(--color-brand-cyan)]/20 shadow-sm'
+                : 'text-brand-secondary hover:text-white hover:bg-white/5 border border-transparent'
+                }`}
             >
               <Icon size={18} />
               <span>{label}</span>
@@ -1287,15 +1286,15 @@ const Admin = () => {
           <button onClick={() => setSidebarOpen(true)} className="p-2 text-brand-secondary hover:text-white hover:bg-white/5 rounded-lg transition-colors">
             <Menu size={22} />
           </button>
-          <img 
-            src="/brand/logo-color-white.png" 
-            alt="Grupo Consultio" 
-            className="h-6 w-auto object-contain" 
+          <img
+            src="/brand/logo-color-white.png"
+            alt="Grupo Consultio"
+            className="h-6 w-auto object-contain"
           />
         </div>
 
         <div className="flex-1 p-4 md:p-8 lg:p-10">
-          
+
           {/* Header Superior */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
             <div>
@@ -1313,7 +1312,7 @@ const Admin = () => {
                 {activeTab === 'users' && 'Administración de cuentas de acceso, credenciales y asignación de permisos.'}
               </p>
             </div>
-            
+
             <div className="flex items-center gap-3">
               {activeTab === 'works' && userRole === 'administrador' && !selectedFolder && (
                 <button
@@ -1558,11 +1557,10 @@ const Admin = () => {
                           <button
                             key={tab.id}
                             onClick={() => setWorkFilter(tab.id)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${
-                              workFilter === tab.id
-                                ? 'bg-[var(--color-brand-cyan)] text-black shadow-md shadow-[var(--color-brand-cyan)]/20'
-                                : 'bg-[#131B2E] text-slate-400 hover:text-white border border-white/5'
-                            }`}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all ${workFilter === tab.id
+                              ? 'bg-[var(--color-brand-cyan)] text-black shadow-md shadow-[var(--color-brand-cyan)]/20'
+                              : 'bg-[#131B2E] text-slate-400 hover:text-white border border-white/5'
+                              }`}
                           >
                             <Icon size={14} />
                             {tab.label}
@@ -1709,22 +1707,22 @@ const Admin = () => {
              ══════════════════════════════════════════════════════════ */}
           {activeTab === 'users' && userRole === 'administrador' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-6">
-              
+
               {/* Formulario Agregar Usuario */}
               <form onSubmit={handleAddUser} className="glass-elevated rounded-2xl p-4 md:p-6 flex flex-col md:flex-row gap-4 items-end">
                 <div className="flex-1 min-w-[180px]">
                   <label className="block text-sm text-brand-secondary mb-2">Nombre de Usuario</label>
-                  <input type="text" value={newUser.username} onChange={e => setNewUser({...newUser, username: e.target.value})} className={inputCls} placeholder="Ej: cliente_muni" required />
+                  <input type="text" value={newUser.username} onChange={e => setNewUser({ ...newUser, username: e.target.value })} className={inputCls} placeholder="Ej: cliente_muni" required />
                 </div>
                 <div className="flex-1 min-w-[180px]">
                   <label className="block text-sm text-brand-secondary mb-2">Contraseña</label>
-                  <input type="text" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} className={inputCls} placeholder="Contraseña de acceso" required />
+                  <input type="text" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} className={inputCls} placeholder="Contraseña de acceso" required />
                 </div>
                 <div className="w-full md:w-56">
                   <label className="block text-sm text-brand-secondary mb-2">Rol / Permisos</label>
                   <select
                     value={newUser.role}
-                    onChange={e => setNewUser({...newUser, role: e.target.value})}
+                    onChange={e => setNewUser({ ...newUser, role: e.target.value })}
                     className={selectCls}
                   >
                     <option value="lector">Lector (Solo Trabajos)</option>
@@ -1825,7 +1823,7 @@ const Admin = () => {
              ══════════════════════════════════════════════════════════ */}
           {activeTab === 'contacts' && userRole === 'administrador' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-6">
-              
+
               {/* Resend status alert banner */}
               <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-3 text-cyan-300">
@@ -1929,11 +1927,11 @@ const Admin = () => {
                     const isReunion = (c.type || '').toLowerCase().includes('reuni');
                     const matchesType =
                       contactTypeFilter === 'todos' ? true :
-                      contactTypeFilter === 'reunion' ? isReunion :
-                      !isReunion;
+                        contactTypeFilter === 'reunion' ? isReunion :
+                          !isReunion;
                     const matchesStatus =
                       contactStatusFilter === 'todos' ? true :
-                      (c.status || 'Nuevo') === contactStatusFilter;
+                        (c.status || 'Nuevo') === contactStatusFilter;
                     return matchesSearch && matchesType && matchesStatus;
                   });
 
@@ -1959,9 +1957,8 @@ const Admin = () => {
                           >
                             <div className="flex-1">
                               <div className="flex flex-wrap items-center gap-2 mb-2">
-                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-display font-black uppercase tracking-wider ${
-                                  isReunion ? 'bg-[var(--color-brand-cyan)]/20 text-[var(--color-brand-cyan)] border border-[var(--color-brand-cyan)]/30' : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                                }`}>
+                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-display font-black uppercase tracking-wider ${isReunion ? 'bg-[var(--color-brand-cyan)]/20 text-[var(--color-brand-cyan)] border border-[var(--color-brand-cyan)]/30' : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                  }`}>
                                   {isReunion ? 'Solicitud de Reunión' : 'Contacto General'}
                                 </span>
                                 <span className="text-xs text-slate-500 font-mono">
@@ -2016,12 +2013,11 @@ const Admin = () => {
                               <select
                                 value={contact.status || 'Nuevo'}
                                 onChange={e => handleUpdateContactStatus(contact.id, e.target.value)}
-                                className={`text-xs font-bold uppercase rounded-xl px-3 py-2 border focus:outline-none cursor-pointer ${
-                                  (contact.status || 'Nuevo') === 'Nuevo' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
+                                className={`text-xs font-bold uppercase rounded-xl px-3 py-2 border focus:outline-none cursor-pointer ${(contact.status || 'Nuevo') === 'Nuevo' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
                                   contact.status === 'Contactado' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
-                                  contact.status === 'Reunión Agendada' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
-                                  'bg-slate-500/20 text-slate-300 border-slate-500/30'
-                                }`}
+                                    contact.status === 'Reunión Agendada' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
+                                      'bg-slate-500/20 text-slate-300 border-slate-500/30'
+                                  }`}
                               >
                                 <option value="Nuevo">Nuevo</option>
                                 <option value="Contactado">Contactado</option>
@@ -2052,7 +2048,7 @@ const Admin = () => {
              ══════════════════════════════════════════════════════════ */}
           {activeTab === 'subscribers' && userRole === 'administrador' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-6">
-              
+
               {/* Banner Resend Audiences */}
               <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-3 text-emerald-300">
@@ -2221,9 +2217,8 @@ const Admin = () => {
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
-              className={`bg-[#0B0F17] border border-white/20 rounded-2xl flex flex-col shadow-2xl overflow-hidden transition-all duration-300 ${
-                isFullscreenPreview ? 'w-full h-full rounded-none' : 'w-full max-w-7xl h-[97vh]'
-              }`}
+              className={`bg-[#0B0F17] border border-white/20 rounded-2xl flex flex-col shadow-2xl overflow-hidden transition-all duration-300 ${isFullscreenPreview ? 'w-full h-full rounded-none' : 'w-full max-w-7xl h-[97vh]'
+                }`}
             >
               {/* Barra Superior del Visor */}
               <div className="px-5 py-2.5 border-b border-white/10 bg-[#111827] flex items-center justify-between gap-4 flex-shrink-0">
@@ -2244,38 +2239,6 @@ const Admin = () => {
 
                 {/* Acciones de la Barra Superior */}
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {/* Botón Abrir en Nueva Pestaña (URLs, Tableros desplegados en servidor y Archivos) */}
-                  {(activePreviewWork.sourceType === 'url' || activePreviewWork.sourceType === 'github') && (
-                    <a
-                      href={getWorkDeployUrl(activePreviewWork)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-semibold text-slate-200 hover:text-white hover:bg-white/10 flex items-center gap-1.5 transition-colors"
-                    >
-                      <ExternalLink size={14} /> <span className="hidden sm:inline">Abrir en Pestaña</span>
-                    </a>
-                  )}
-
-                  {activePreviewWork.sourceType === 'file' && activePreviewWork.fileData && (
-                    <>
-                      <a
-                        href={activePreviewWork.fileData}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-semibold text-slate-200 hover:text-white hover:bg-white/10 flex items-center gap-1.5 transition-colors"
-                      >
-                        <ExternalLink size={14} /> <span className="hidden sm:inline">Abrir en Pestaña</span>
-                      </a>
-                      <a
-                        href={activePreviewWork.fileData}
-                        download={activePreviewWork.fileName || 'archivo'}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-600/30 border border-emerald-500/40 text-xs font-semibold text-emerald-200 hover:text-white hover:bg-emerald-600/50 flex items-center gap-1.5 transition-colors"
-                      >
-                        <Download size={14} /> <span className="hidden sm:inline">Descargar</span>
-                      </a>
-                    </>
-                  )}
-
                   {/* Toggle Pantalla Completa */}
                   <button
                     onClick={() => setIsFullscreenPreview(!isFullscreenPreview)}
@@ -2343,15 +2306,7 @@ const Admin = () => {
                           />
                           {activePreviewWork.fileType === 'pdf' && (
                             <div className="w-full py-1.5 px-4 bg-slate-900 border-t border-white/10 text-[11px] flex items-center justify-between text-slate-400 flex-shrink-0">
-                              <span className="truncate max-w-[280px] sm:max-w-none">Documento PDF: <strong className="text-white">{activePreviewWork.fileName}</strong></span>
-                              <div className="flex items-center gap-3">
-                                <a href={activePreviewWork.fileData} target="_blank" rel="noopener noreferrer" className="text-[var(--color-brand-cyan)] font-semibold hover:underline flex items-center gap-1">
-                                  Abrir en pestaña <ExternalLink size={11} />
-                                </a>
-                                <a href={activePreviewWork.fileData} download={activePreviewWork.fileName} className="text-emerald-400 font-semibold hover:underline flex items-center gap-1">
-                                  Descargar <Download size={11} />
-                                </a>
-                              </div>
+                              <span className="truncate">Documento PDF: <strong className="text-white">{activePreviewWork.fileName}</strong></span>
                             </div>
                           )}
                         </div>
@@ -2447,17 +2402,16 @@ const Admin = () => {
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                     Usuarios con Acceso a esta Carpeta (Selección Múltiple) <span className="text-rose-400">*</span>
                   </label>
-                  
+
                   {/* Selector chips multi-usuario */}
                   <div className="p-3 rounded-xl bg-[#131B2E] border border-white/10 flex flex-col gap-2 max-h-48 overflow-y-auto">
                     {/* Opción 1: Super-Admin grupoconsultio */}
                     <label
                       onClick={() => toggleUserInFolder('grupoconsultio')}
-                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${
-                        newFolder.assignedUsers.includes('grupoconsultio')
-                          ? 'bg-[var(--color-brand-cyan)]/15 border border-[var(--color-brand-cyan)]/40 text-white font-semibold'
-                          : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
-                      }`}
+                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${newFolder.assignedUsers.includes('grupoconsultio')
+                        ? 'bg-[var(--color-brand-cyan)]/15 border border-[var(--color-brand-cyan)]/40 text-white font-semibold'
+                        : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
+                        }`}
                     >
                       <span className="flex items-center gap-2 text-xs">
                         <ShieldCheck size={14} className="text-purple-400" />
@@ -2471,11 +2425,10 @@ const Admin = () => {
                     {/* Opción 2: Todos los usuarios */}
                     <label
                       onClick={() => toggleUserInFolder('todos')}
-                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${
-                        newFolder.assignedUsers.includes('todos')
-                          ? 'bg-purple-500/20 border border-purple-500/40 text-purple-200 font-semibold'
-                          : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
-                      }`}
+                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${newFolder.assignedUsers.includes('todos')
+                        ? 'bg-purple-500/20 border border-purple-500/40 text-purple-200 font-semibold'
+                        : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
+                        }`}
                     >
                       <span className="flex items-center gap-2 text-xs">
                         <Globe size={14} className="text-purple-400" />
@@ -2491,11 +2444,10 @@ const Admin = () => {
                       <label
                         key={u.id}
                         onClick={() => toggleUserInFolder(u.username)}
-                        className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${
-                          newFolder.assignedUsers.includes(u.username)
-                            ? 'bg-[var(--color-brand-cyan)]/15 border border-[var(--color-brand-cyan)]/40 text-white font-semibold'
-                            : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
-                        }`}
+                        className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${newFolder.assignedUsers.includes(u.username)
+                          ? 'bg-[var(--color-brand-cyan)]/15 border border-[var(--color-brand-cyan)]/40 text-white font-semibold'
+                          : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
+                          }`}
                       >
                         <span className="flex items-center gap-2 text-xs">
                           <Users size={14} className="text-[var(--color-brand-cyan)]" />
@@ -2639,11 +2591,10 @@ const Admin = () => {
                     {/* Enlace Web */}
                     <label
                       onClick={() => setNewWork({ ...newWork, sourceType: 'url' })}
-                      className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${
-                        newWork.sourceType === 'url'
-                          ? 'bg-[var(--color-brand-cyan)]/15 border-[var(--color-brand-cyan)] shadow-md shadow-[var(--color-brand-cyan)]/10 text-white'
-                          : 'bg-[#131B2E] border-white/10 text-slate-400 hover:border-white/20 hover:bg-white/5'
-                      }`}
+                      className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${newWork.sourceType === 'url'
+                        ? 'bg-[var(--color-brand-cyan)]/15 border-[var(--color-brand-cyan)] shadow-md shadow-[var(--color-brand-cyan)]/10 text-white'
+                        : 'bg-[#131B2E] border-white/10 text-slate-400 hover:border-white/20 hover:bg-white/5'
+                        }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <Globe size={16} className={newWork.sourceType === 'url' ? 'text-[var(--color-brand-cyan)]' : 'text-slate-400'} />
@@ -2655,11 +2606,10 @@ const Admin = () => {
                     {/* Subir Archivo */}
                     <label
                       onClick={() => setNewWork({ ...newWork, sourceType: 'file' })}
-                      className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${
-                        newWork.sourceType === 'file'
-                          ? 'bg-[var(--color-brand-cyan)]/15 border-[var(--color-brand-cyan)] shadow-md shadow-[var(--color-brand-cyan)]/10 text-white'
-                          : 'bg-[#131B2E] border-white/10 text-slate-400 hover:border-white/20 hover:bg-white/5'
-                      }`}
+                      className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${newWork.sourceType === 'file'
+                        ? 'bg-[var(--color-brand-cyan)]/15 border-[var(--color-brand-cyan)] shadow-md shadow-[var(--color-brand-cyan)]/10 text-white'
+                        : 'bg-[#131B2E] border-white/10 text-slate-400 hover:border-white/20 hover:bg-white/5'
+                        }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <UploadCloud size={16} className={newWork.sourceType === 'file' ? 'text-[var(--color-brand-cyan)]' : 'text-slate-400'} />
@@ -2671,11 +2621,10 @@ const Admin = () => {
                     {/* GitHub */}
                     <label
                       onClick={() => setNewWork({ ...newWork, sourceType: 'github' })}
-                      className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${
-                        newWork.sourceType === 'github'
-                          ? 'bg-purple-500/15 border-purple-400 shadow-md shadow-purple-500/10 text-white'
-                          : 'bg-[#131B2E] border-white/10 text-slate-400 hover:border-white/20 hover:bg-white/5'
-                      }`}
+                      className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${newWork.sourceType === 'github'
+                        ? 'bg-purple-500/15 border-purple-400 shadow-md shadow-purple-500/10 text-white'
+                        : 'bg-[#131B2E] border-white/10 text-slate-400 hover:border-white/20 hover:bg-white/5'
+                        }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <FileCode size={16} className={newWork.sourceType === 'github' ? 'text-purple-400' : 'text-slate-400'} />
@@ -2712,7 +2661,7 @@ const Admin = () => {
                     <label className="block text-xs font-semibold text-slate-300">
                       Archivo del Trabajo (PDF, Excel, TXT, CSV, ZIP, HTML) <span className="text-rose-400">*</span>
                     </label>
-                    
+
                     <div className="border-2 border-dashed border-white/20 rounded-xl p-5 text-center hover:border-[var(--color-brand-cyan)] transition-colors relative bg-white/[0.02]">
                       <input
                         type="file"
@@ -3071,11 +3020,10 @@ const Admin = () => {
                     {/* Super admin */}
                     <label
                       onClick={() => toggleUserInFolder('grupoconsultio', true)}
-                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${
-                        (editingFolder.assignedUsers || []).includes('grupoconsultio')
-                          ? 'bg-[var(--color-brand-cyan)]/15 border border-[var(--color-brand-cyan)]/40 text-white font-semibold'
-                          : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
-                      }`}
+                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${(editingFolder.assignedUsers || []).includes('grupoconsultio')
+                        ? 'bg-[var(--color-brand-cyan)]/15 border border-[var(--color-brand-cyan)]/40 text-white font-semibold'
+                        : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
+                        }`}
                     >
                       <span className="flex items-center gap-2 text-xs">
                         <ShieldCheck size={14} className="text-purple-400" />
@@ -3089,11 +3037,10 @@ const Admin = () => {
                     {/* Todos los usuarios */}
                     <label
                       onClick={() => toggleUserInFolder('todos', true)}
-                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${
-                        (editingFolder.assignedUsers || []).includes('todos')
-                          ? 'bg-purple-500/20 border border-purple-500/40 text-purple-200 font-semibold'
-                          : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
-                      }`}
+                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${(editingFolder.assignedUsers || []).includes('todos')
+                        ? 'bg-purple-500/20 border border-purple-500/40 text-purple-200 font-semibold'
+                        : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
+                        }`}
                     >
                       <span className="flex items-center gap-2 text-xs">
                         <Globe size={14} className="text-purple-400" />
@@ -3109,11 +3056,10 @@ const Admin = () => {
                       <label
                         key={u.id}
                         onClick={() => toggleUserInFolder(u.username, true)}
-                        className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${
-                          (editingFolder.assignedUsers || []).includes(u.username)
-                            ? 'bg-[var(--color-brand-cyan)]/15 border border-[var(--color-brand-cyan)]/40 text-white font-semibold'
-                            : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
-                        }`}
+                        className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${(editingFolder.assignedUsers || []).includes(u.username)
+                          ? 'bg-[var(--color-brand-cyan)]/15 border border-[var(--color-brand-cyan)]/40 text-white font-semibold'
+                          : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
+                          }`}
                       >
                         <span className="flex items-center gap-2 text-xs">
                           <Users size={14} className="text-[var(--color-brand-cyan)]" />
@@ -3396,11 +3342,10 @@ const Admin = () => {
               </div>
 
               {broadcastResult && (
-                <div className={`p-4 rounded-xl text-xs mb-4 flex items-center gap-2 ${
-                  broadcastResult.type === 'success'
-                    ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
-                    : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
-                }`}>
+                <div className={`p-4 rounded-xl text-xs mb-4 flex items-center gap-2 ${broadcastResult.type === 'success'
+                  ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
+                  : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
+                  }`}>
                   {broadcastResult.type === 'success' ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
                   <span>{broadcastResult.message}</span>
                 </div>
