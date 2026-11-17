@@ -72,7 +72,7 @@ const MainLanding = () => {
   return (
     <>
       <motion.div
-        className="fixed top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[var(--color-brand-cyan)] to-white z-[60] origin-left shadow-[0_0_10px_rgba(0,229,255,0.8)]"
+        className="fixed top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[var(--color-brand-cyan)] via-[var(--color-brand-lime)] to-white z-[60] origin-left shadow-[0_0_12px_rgba(40,230,255,0.8)]"
         style={{ scaleX }}
       />
       <Navbar />
@@ -89,7 +89,7 @@ const MainLanding = () => {
 
 function App() {
   return (
-    <div className="bg-brand-bg min-h-screen selection:bg-[var(--color-brand-cyan)] selection:text-black text-brand-accent font-sans">
+    <div className="bg-brand-bg min-h-screen selection:bg-[var(--color-brand-cyan)] selection:text-[#041B1F] text-brand-accent font-sans">
       <Routes>
         <Route path="/" element={<MainLanding />} />
         <Route path="/login" element={<LoginOrAdmin />} />
@@ -111,10 +111,11 @@ function App() {
         <Route path="/privacidad" element={<><Navbar /><PrivacyPolicy /><Footer /></>} />
       </Routes>
 
-      {/* Global Background visual flair */}
+      {/* Global Background visual flair en tonos Petróleo y Cyan de marca */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
-        <div className="absolute top-[20%] left-[-10%] w-[40%] h-[40%] bg-[var(--color-brand-cyan)]/5 rounded-full blur-[150px]" />
-        <div className="absolute bottom-[10%] right-[-10%] w-[50%] h-[50%] bg-white/5 rounded-full blur-[180px]" />
+        <div className="absolute top-[15%] left-[-10%] w-[50%] h-[50%] bg-[#074F57]/35 rounded-full blur-[170px]" />
+        <div className="absolute top-[35%] right-[-10%] w-[40%] h-[40%] bg-[var(--color-brand-cyan)]/10 rounded-full blur-[180px]" />
+        <div className="absolute bottom-[5%] left-[25%] w-[50%] h-[50%] bg-[#04282D]/40 rounded-full blur-[180px]" />
       </div>
     </div>
   );

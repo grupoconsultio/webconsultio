@@ -37,33 +37,36 @@ const Footer = () => {
   };
 
   return (
-    <footer className="bg-black border-t border-white/10 pt-24 pb-12 relative overflow-hidden">
+    <footer className="bg-[#031518] border-t border-white/10 pt-24 pb-12 relative overflow-hidden">
       
-      {/* Background glow */}
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-[var(--color-brand-cyan)]/5 rounded-full blur-[140px] pointer-events-none" />
+      {/* Background glow en tonos Petróleo y Cyan */}
+      <div className="absolute top-0 right-1/4 w-96 h-96 bg-[var(--color-brand-cyan)]/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-0 left-10 w-80 h-80 bg-[#074F57]/30 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="container mx-auto px-6 md:px-12 relative z-10">
         
-        {/* Big Olivia-inspired Brand Statement Banner */}
+        {/* Big Brand Statement Banner */}
         <div className="pb-16 border-b border-white/10 flex flex-col lg:flex-row lg:items-end justify-between gap-8">
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full border-2 border-white/80 flex items-center justify-center">
-                <span className="w-2 h-2 rounded-full bg-[var(--color-brand-cyan)]" />
-              </div>
-              <span className="text-xs font-display font-bold tracking-[0.25em] text-white/50 uppercase">
-                FIRMA CONSULTORA
+              <img 
+                src="/brand/isologo-cyan-lime.png" 
+                alt="Consultio" 
+                className="w-8 h-8 object-contain" 
+              />
+              <span className="text-xs font-display font-bold tracking-[0.25em] text-[var(--color-brand-cyan)] uppercase">
+                CONSULTORÍA ESTRATÉGICA
               </span>
             </div>
-            <h2 className="text-4xl sm:text-6xl md:text-7xl font-display font-black uppercase text-white tracking-tight leading-[0.95]">
-              GRUPO CONSULTIO
+            <h2 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold text-white tracking-tight leading-[1.05]">
+              Grupo Consultio
             </h2>
           </div>
 
           <div className="flex items-center gap-4">
             <button
               onClick={scrollToTop}
-              className="w-14 h-14 rounded-full border border-white/20 bg-white/5 hover:bg-white text-white hover:text-black transition-all duration-300 flex items-center justify-center group"
+              className="w-14 h-14 rounded-full border border-white/20 bg-[#074F57]/30 hover:bg-[var(--color-brand-cyan)] text-white hover:text-[#041B1F] transition-all duration-300 flex items-center justify-center group"
               aria-label="Volver arriba"
             >
               <ArrowUp size={20} className="transition-transform group-hover:-translate-y-1" />
@@ -178,8 +181,9 @@ const Footer = () => {
 
         {/* Bottom Credits */}
         <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-mono text-white/40">
-          <div>
-            © {new Date().getFullYear()} GRUPO CONSULTIO. TODOS LOS DERECHOS RESERVADOS.
+          <div className="flex items-center gap-2.5">
+            <img src="/brand/isologo-color.png" alt="Consultio" className="w-5 h-5 rounded-md object-contain" />
+            <span>© {new Date().getFullYear()} GRUPO CONSULTIO. TODOS LOS DERECHOS RESERVADOS.</span>
           </div>
           <div className="flex items-center gap-6">
             <Link to="/terminos" className="hover:text-white transition-colors">Términos de Servicio</Link>

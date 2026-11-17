@@ -210,7 +210,7 @@ const CTA = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 onSubmit={handleMeetingSubmit}
-                className="relative z-10 w-full max-w-2xl mx-auto text-left flex flex-col gap-5 p-6 md:p-10 rounded-3xl bg-black/80 border border-white/10 backdrop-blur-xl"
+                className="relative z-10 w-full max-w-2xl mx-auto text-left flex flex-col gap-5 p-6 md:p-10 rounded-3xl bg-[#041B1F]/95 border border-white/10 backdrop-blur-xl"
               >
                 <div className="text-center pb-4 border-b border-white/10">
                   <div className="olivia-tag mx-auto mb-3">
@@ -348,7 +348,7 @@ const CTA = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 onSubmit={handleContactSubmit}
-                className="relative z-10 w-full max-w-xl mx-auto text-left flex flex-col gap-5 p-6 md:p-10 rounded-3xl bg-black/80 border border-white/10 backdrop-blur-xl"
+                className="relative z-10 w-full max-w-xl mx-auto text-left flex flex-col gap-5 p-6 md:p-10 rounded-3xl bg-[#041B1F]/95 border border-white/10 backdrop-blur-xl"
               >
                 <div className="text-center pb-4 border-b border-white/10">
                   <div className="olivia-tag mx-auto mb-3">
@@ -466,8 +466,8 @@ const CTA = () => {
                   <span>TRANSFORMACIÓN ESTRATÉGICA //</span>
                 </div>
 
-                <h2 className="text-3xl sm:text-5xl md:text-6xl font-display font-black uppercase tracking-tight text-white mb-6 leading-tight">
-                  ¿Listo para <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white/95 to-[var(--color-brand-cyan)]">potenciar</span> su gestión?
+                <h2 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold uppercase tracking-tight text-white mb-6 leading-tight">
+                  ¿Listo para <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#F3EFF5] to-[var(--color-brand-cyan)]">potenciar</span> su gestión?
                 </h2>
 
                 <p className="text-base md:text-xl text-white/70 mb-10 max-w-xl mx-auto font-sans leading-relaxed">

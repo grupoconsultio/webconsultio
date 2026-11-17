@@ -9,7 +9,7 @@ const TermsOfService = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white pt-32 pb-24 relative overflow-hidden">
+    <div className="min-h-screen bg-brand-bg text-white pt-32 pb-24 relative overflow-hidden">
       {/* Decorative Glow */}
       <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-[var(--color-brand-cyan)]/5 rounded-full blur-[140px] pointer-events-none" />
 

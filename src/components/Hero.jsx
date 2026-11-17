@@ -28,12 +28,12 @@ const Hero = () => {
       },
     },
     particles: {
-      color: { value: "#00E5FF" },
+      color: { value: ["#28E6FF", "#BEFF0A"] },
       links: {
-        color: "#00E5FF",
+        color: "#28E6FF",
         distance: 140,
         enable: true,
-        opacity: 0.35,
+        opacity: 0.3,
         width: 1,
       },
       move: {
@@ -41,14 +41,14 @@ const Hero = () => {
         enable: true,
         outModes: { default: "bounce" },
         random: false,
-        speed: 0.9,
+        speed: 0.85,
         straight: false,
       },
       number: {
         density: { enable: true, area: 900 },
         value: 70,
       },
-      opacity: { value: 0.4 },
+      opacity: { value: 0.45 },
       shape: { type: "circle" },
       size: { value: { min: 1, max: 2.2 } },
     },
@@ -69,40 +69,40 @@ const Hero = () => {
       {/* Main Content Area */}
       <div className="container mx-auto px-6 md:px-12 relative z-10 my-auto">
         <div className="max-w-5xl">
-          {/* Olivia-style category tag */}
+          {/* Olivia-style category tag con acento Lima oficial */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="mb-6 flex flex-wrap items-center gap-3"
           >
-            <span className="olivia-tag border-[var(--color-brand-cyan)]/40 text-[var(--color-brand-cyan)] bg-[var(--color-brand-cyan)]/5 shadow-[0_0_20px_rgba(0,229,255,0.15)]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-cyan)] animate-ping" />
+            <span className="olivia-tag">
+              <span className="w-2 h-2 rounded-full bg-[var(--color-brand-lime)] shadow-[0_0_8px_#BEFF0A] animate-ping" />
               CONSULTORÍA ESTRATÉGICA & ANALÍTICA
             </span>
-            <span className="text-xs font-mono uppercase tracking-widest text-white/40 hidden sm:inline-block">
+            <span className="text-xs font-mono uppercase tracking-widest text-[#9DB4B8] hidden sm:inline-block">
               // LATAM & ESPAÑA
             </span>
           </motion.div>
 
-          {/* Big Olivia-inspired Headings */}
+          {/* Headings en Space Grotesk */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           >
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-display font-black leading-[1.12] tracking-tight uppercase mb-6 max-w-4xl">
-              Transformar Datos en <br className="hidden md:inline" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white/95 to-[var(--color-brand-cyan)]">
-                Conocimiento Útil.
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-display font-bold leading-[1.12] tracking-tight mb-6 max-w-4xl">
+              Transformar datos en <br className="hidden md:inline" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#F3EFF5] to-[var(--color-brand-cyan)]">
+                conocimiento útil.
               </span>
             </h1>
 
-            <p className="text-base md:text-lg font-normal text-white/75 max-w-2xl leading-relaxed mb-8 font-sans">
+            <p className="text-base md:text-lg font-normal text-white/80 max-w-2xl leading-relaxed mb-8 font-sans">
               Acompañamos a gobiernos y organizaciones privadas en la toma de decisiones. Desarrollamos estudios de opinión, tableros de control y diagnósticos organizacionales para mejorar el impacto y la gestión.
             </p>
 
-            {/* Pill Action Buttons (Olivia Global style) */}
+            {/* Pill Action Buttons */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-6">
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -130,9 +130,10 @@ const Hero = () => {
         </div>
       </div>
 
-      {/* Decorative Glows */}
-      <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-[var(--color-brand-cyan)]/10 rounded-full blur-[140px] z-0 pointer-events-none" />
-      <div className="absolute bottom-10 left-[-100px] w-[400px] h-[400px] bg-white/5 rounded-full blur-[120px] z-0 pointer-events-none" />
+      {/* Decorative Brand Glows (Petróleo y Cyan) */}
+      <div className="absolute top-1/4 right-0 w-[550px] h-[550px] bg-[#074F57]/40 rounded-full blur-[150px] z-0 pointer-events-none" />
+      <div className="absolute top-1/3 right-10 w-[350px] h-[350px] bg-[var(--color-brand-cyan)]/15 rounded-full blur-[130px] z-0 pointer-events-none" />
+      <div className="absolute bottom-10 left-[-100px] w-[450px] h-[450px] bg-[#074F57]/30 rounded-full blur-[130px] z-0 pointer-events-none" />
     </section>
   );
 };

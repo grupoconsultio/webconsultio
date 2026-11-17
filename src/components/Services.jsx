@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Search, 
-  LayoutDashboard, 
-  Users, 
-  MonitorSmartphone, 
-  LineChart, 
-  Target, 
+import {
+  Search,
+  LayoutDashboard,
+  Users,
+  MonitorSmartphone,
+  LineChart,
+  Target,
   ArrowUpRight,
   CheckCircle2,
   ChevronRight
@@ -120,13 +120,13 @@ const Services = () => {
   return (
     <section id="services" className="pt-16 md:pt-20 pb-4 md:pb-6 bg-brand-bg relative overflow-hidden">
       <div className="container mx-auto px-6 md:px-12 relative z-10">
-        
+
         {/* Section Header: Perfectly Leveled Title and Description */}
         <div className="mb-12 md:mb-14 border-b border-white/10 pb-8">
           <div className="olivia-tag mb-4">
             <span>SOLUCIONES //</span>
           </div>
-          
+
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-12">
             <h2 className="text-3xl sm:text-5xl md:text-6xl font-display font-black tracking-tight uppercase leading-none text-white">
               ¿QUÉ HACEMOS?
@@ -154,13 +154,12 @@ const Services = () => {
             const ServiceIcon = service.icon;
 
             return (
-              <div 
-                key={service.id} 
-                className={`rounded-2xl border transition-all duration-300 overflow-hidden ${
-                  isExpanded 
-                    ? 'bg-white/[0.04] border-[var(--color-brand-cyan)]/50 shadow-[0_0_25px_rgba(0,229,255,0.12)]' 
+              <div
+                key={service.id}
+                className={`rounded-2xl border transition-all duration-300 overflow-hidden ${isExpanded
+                    ? 'bg-white/[0.04] border-[var(--color-brand-cyan)]/50 shadow-[0_0_25px_rgba(0,229,255,0.12)]'
                     : 'bg-white/[0.02] border-white/5 hover:border-white/20'
-                }`}
+                  }`}
               >
                 {/* Botón de la opción */}
                 <button
@@ -175,13 +174,12 @@ const Services = () => {
                       {service.title}
                     </span>
                   </div>
-                  <ChevronRight 
-                    size={18} 
-                    className={`transition-transform duration-300 flex-shrink-0 ${
-                      isExpanded 
-                        ? 'text-[var(--color-brand-cyan)] rotate-90' 
+                  <ChevronRight
+                    size={18}
+                    className={`transition-transform duration-300 flex-shrink-0 ${isExpanded
+                        ? 'text-[var(--color-brand-cyan)] rotate-90'
                         : 'text-white/30'
-                    }`} 
+                      }`}
                   />
                 </button>
 
@@ -240,7 +238,7 @@ const Services = () => {
             2. VISTA ESCRITORIO (>= lg): LAYOUT SIDE-BY-SIDE INTERACTIVO
            ══════════════════════════════════════════════════════════════ */}
         <div className="hidden lg:grid grid-cols-12 gap-8 lg:gap-14 mb-0 items-start">
-          
+
           {/* Left Column: Active Service Details Card */}
           <div className="col-span-7">
             <AnimatePresence mode="wait">
@@ -316,11 +314,10 @@ const Services = () => {
                   key={service.id}
                   onClick={() => setActiveTab(service.id)}
                   onMouseEnter={() => setActiveTab(service.id)}
-                  className={`w-full text-left p-5 rounded-2xl transition-all duration-300 flex items-center justify-between group border cursor-pointer ${
-                    isActive 
-                      ? 'bg-white/10 border-[var(--color-brand-cyan)]/50 shadow-[0_0_25px_rgba(0,229,255,0.15)] translate-x-1.5' 
-                      : 'bg-white/[0.02] border-white/5 hover:border-white/20 hover:bg-white/[0.05]'
-                  }`}
+                  className={`w-full text-left p-5 rounded-2xl transition-all duration-300 flex items-center justify-between group border cursor-pointer ${isActive
+                      ? 'bg-[#074F57]/40 border-[var(--color-brand-cyan)]/60 shadow-[0_0_25px_rgba(40,230,255,0.2)] translate-x-1.5'
+                      : 'bg-white/[0.02] border-white/5 hover:border-white/20 hover:bg-[#074F57]/15'
+                    }`}
                 >
                   <div className="flex items-center gap-4">
                     <span className={`text-xs font-mono font-bold transition-colors ${isActive ? 'text-[var(--color-brand-cyan)]' : 'text-white/40 group-hover:text-white'}`}>
@@ -332,13 +329,12 @@ const Services = () => {
                       </span>
                     </div>
                   </div>
-                  <ChevronRight 
-                    size={18} 
-                    className={`transition-all duration-300 ${
-                      isActive 
-                        ? 'text-[var(--color-brand-cyan)] translate-x-1' 
+                  <ChevronRight
+                    size={18}
+                    className={`transition-all duration-300 ${isActive
+                        ? 'text-[var(--color-brand-cyan)] translate-x-1'
                         : 'text-white/30 group-hover:text-white group-hover:translate-x-0.5'
-                    }`} 
+                      }`}
                   />
                 </button>
               );

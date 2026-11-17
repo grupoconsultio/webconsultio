@@ -101,11 +101,14 @@ const AdminLogin = ({ onLoginSuccess }) => {
         className="w-full max-w-sm glass-elevated rounded-2xl p-8"
       >
         <div className="mb-8 text-center">
-          <div className="flex flex-col leading-none items-center mb-4">
-            <span className="text-sm font-display font-light tracking-[0.2em] text-brand-secondary">GRUPO</span>
-            <span className="text-2xl font-display font-extrabold tracking-tight text-white">CONSULTIO</span>
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/brand/logo-color-white.png" 
+              alt="Grupo Consultio" 
+              className="h-9 w-auto object-contain" 
+            />
           </div>
-          <p className="text-brand-secondary text-sm">Panel de Administración</p>
+          <p className="text-brand-secondary text-xs uppercase tracking-wider font-display font-semibold">Panel de Administración</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

@@ -125,21 +125,21 @@ const Demos = () => {
           <div className="olivia-tag mb-4">
             <span>PORTAFOLIO DE SOLUCIONES //</span>
           </div>
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-display font-black uppercase tracking-tight text-white mb-6">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-display font-bold uppercase tracking-tight text-white mb-6">
             PRODUCTOS & DEMOS
           </h1>
-          <p className="text-white/70 max-w-2xl font-sans text-base md:text-lg leading-relaxed mb-10">
+          <p className="text-white/80 max-w-2xl font-sans text-base md:text-lg leading-relaxed mb-10">
             Explorá nuestras herramientas interactivas en vivo. Además de estas plataformas modelo, diseñamos arquitecturas analíticas y sistemas a medida para los desafíos específicos de su organización.
           </p>
 
-          {/* Olivia-style Filter Pills */}
+          {/* Filter Pills con paleta de marca */}
           {!active && (
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <button
                 onClick={() => setFilter('todos')}
                 className={`px-6 py-2.5 rounded-full text-xs font-display font-bold uppercase tracking-wider transition-all duration-300 ${
                   filter === 'todos'
-                    ? 'bg-white text-black shadow-[0_2px_15px_rgba(255,255,255,0.2)]'
+                    ? 'bg-[var(--color-brand-cyan)] text-[#041B1F] shadow-[0_2px_15px_rgba(40,230,255,0.3)]'
                     : 'bg-white/5 text-white/60 hover:text-white border border-white/10'
                 }`}
               >
@@ -149,7 +149,7 @@ const Demos = () => {
                 onClick={() => setFilter('publico')}
                 className={`px-6 py-2.5 rounded-full text-xs font-display font-bold uppercase tracking-wider transition-all duration-300 ${
                   filter === 'publico'
-                    ? 'bg-white text-black shadow-[0_2px_15px_rgba(255,255,255,0.2)]'
+                    ? 'bg-[var(--color-brand-cyan)] text-[#041B1F] shadow-[0_2px_15px_rgba(40,230,255,0.3)]'
                     : 'bg-white/5 text-white/60 hover:text-white border border-white/10'
                 }`}
               >
@@ -159,7 +159,7 @@ const Demos = () => {
                 onClick={() => setFilter('privado')}
                 className={`px-6 py-2.5 rounded-full text-xs font-display font-bold uppercase tracking-wider transition-all duration-300 ${
                   filter === 'privado'
-                    ? 'bg-white text-black shadow-[0_2px_15px_rgba(255,255,255,0.2)]'
+                    ? 'bg-[var(--color-brand-cyan)] text-[#041B1F] shadow-[0_2px_15px_rgba(40,230,255,0.3)]'
                     : 'bg-white/5 text-white/60 hover:text-white border border-white/10'
                 }`}
               >

@@ -57,19 +57,18 @@ const Navbar = () => {
       <nav 
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           scrolled 
-            ? 'py-3.5 bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.8)]' 
+            ? 'py-3.5 bg-[#041B1F]/90 backdrop-blur-xl border-b border-white/10 shadow-[0_10px_30px_rgba(4,27,31,0.8)]' 
             : 'py-6 bg-transparent'
         }`}
       >
         <div className="container mx-auto px-6 md:px-12 flex justify-between items-center">
-          {/* Logo with clean typography (circle removed as requested) */}
-          <Link to="/" className="flex items-center group z-50">
-            <div className="flex flex-col leading-none">
-              <span className="text-[10px] font-display font-bold tracking-[0.25em] text-white/50 uppercase">GRUPO</span>
-              <span className="text-xl md:text-2xl font-display font-black tracking-tight text-white group-hover:text-white transition-colors">
-                CONSULTIO
-              </span>
-            </div>
+          {/* Logo Oficial de Marca Grupo Consultio */}
+          <Link to="/" className="flex items-center group z-50" aria-label="Grupo Consultio - Inicio">
+            <img 
+              src="/brand/logo-color-white.png" 
+              alt="Grupo Consultio" 
+              className="h-8 md:h-9 w-auto object-contain transition-transform duration-300 group-hover:scale-105" 
+            />
           </Link>
 
           {/* Desktop Navigation */}
@@ -132,9 +131,16 @@ const Navbar = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-40 bg-black/95 backdrop-blur-2xl flex flex-col justify-between p-8 pt-28 md:hidden"
+            className="fixed inset-0 z-40 bg-[#041B1F]/98 backdrop-blur-2xl flex flex-col justify-between p-8 pt-24 md:hidden"
           >
-            <div className="flex flex-col gap-5 mt-4">
+            <div className="flex flex-col gap-5 mt-2">
+              <div className="mb-2">
+                <img 
+                  src="/brand/logo-color-white.png" 
+                  alt="Grupo Consultio" 
+                  className="h-8 w-auto object-contain" 
+                />
+              </div>
               <span className="text-[11px] font-display font-bold tracking-[0.25em] text-[var(--color-brand-cyan)] uppercase">
                 MENÚ DE NAVEGACIÓN
               </span>

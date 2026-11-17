@@ -124,17 +124,6 @@ const INITIAL_CLIENT_WORKS = [
     createdBy: 'grupoconsultio'
   },
   {
-    id: 'work-encuesta-ia-mexico-2026',
-    clientFolderId: 'CIQNwadklAnSpJr0JM85',
-    title: 'Encuesta Nacional IA México 2026',
-    description: 'Tablero en tiempo real: adopción de IA en México, 32 entidades federativas, confianza ciudadana, impacto electoral y sorteo 200 USD.',
-    sourceType: 'url',
-    url: '/admin/encuesta-ia-mexico',
-    category: 'Opinión Pública',
-    createdAt: new Date('2026-10-27').toISOString(),
-    createdBy: 'grupoconsultio'
-  },
-  {
     id: 'work-rio-cuarto-mapa',
     clientFolderId: 'FCSCePtNm4urAxAIMWUA',
     title: 'Encuesta Río Cuarto',
@@ -274,12 +263,11 @@ const Admin = () => {
         let list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         const deletedFolderIds = JSON.parse(localStorage.getItem('deletedFolderIds') || '[]');
+        list = list.filter(item => !deletedFolderIds.includes(item.id));
 
-        // Asegurar que las carpetas base existan en Firestore si aún no se han creado y no fueron eliminadas
-        for (const initFolder of INITIAL_CLIENT_FOLDERS) {
-          if (deletedFolderIds.includes(initFolder.id)) continue;
-          const found = list.find(f => f.id === initFolder.id || (f.name && f.name.toLowerCase() === initFolder.name.toLowerCase()));
-          if (!found) {
+        // Solo si la colección en Firestore está completamente vacía (instalación inicial virgen), sembrar carpetas iniciales
+        if (snap.empty && list.length === 0 && !localStorage.getItem('folders_initialized')) {
+          for (const initFolder of INITIAL_CLIENT_FOLDERS) {
             try {
               await setDoc(doc(db, 'client_folders', initFolder.id), initFolder);
               list.push(initFolder);
@@ -287,6 +275,7 @@ const Admin = () => {
               list.push(initFolder);
             }
           }
+          localStorage.setItem('folders_initialized', 'true');
         }
 
         setClientFolders(list);
@@ -295,12 +284,7 @@ const Admin = () => {
         console.warn('Fallo al obtener carpetas de Firestore, usando cache:', err);
         const stored = JSON.parse(localStorage.getItem('clientFolders') || '[]');
         const deletedFolderIds = JSON.parse(localStorage.getItem('deletedFolderIds') || '[]');
-        let list = [...stored];
-        INITIAL_CLIENT_FOLDERS.forEach(initFolder => {
-          if (!deletedFolderIds.includes(initFolder.id) && !list.some(f => f.id === initFolder.id || (f.name && f.name.toLowerCase() === initFolder.name.toLowerCase()))) {
-            list.push(initFolder);
-          }
-        });
+        let list = stored.filter(item => !deletedFolderIds.includes(item.id));
         setClientFolders(list);
       }
     };
@@ -315,16 +299,22 @@ const Admin = () => {
         const testItem = list.find(item => item.id === 'work-rio-cuarto-informe' || (item.title || '').includes('Informe Ejecutivo de Opinión Pública'));
         if (testItem) {
           try { await deleteDoc(doc(db, 'client_works', testItem.id)); } catch (e) {}
+          list = list.filter(item => item.id !== 'work-rio-cuarto-informe' && !(item.title || '').includes('Informe Ejecutivo de Opinión Pública'));
         }
-        list = list.filter(item => item.id !== 'work-rio-cuarto-informe' && !(item.title || '').includes('Informe Ejecutivo de Opinión Pública'));
+
+        // Limpieza explícita y definitiva de la Encuesta IA México si aún persistía en Firestore
+        const mexicoItem = list.find(item => item.id === 'work-encuesta-ia-mexico-2026' || (item.title || '').toLowerCase().includes('ia méxico') || (item.title || '').toLowerCase().includes('ia mexico'));
+        if (mexicoItem) {
+          try { await deleteDoc(doc(db, 'client_works', mexicoItem.id)); } catch (e) {}
+          list = list.filter(item => item.id !== mexicoItem.id && !(item.title || '').toLowerCase().includes('ia méxico') && !(item.title || '').toLowerCase().includes('ia mexico'));
+        }
 
         const deletedWorkIds = JSON.parse(localStorage.getItem('deletedWorkIds') || '[]');
+        list = list.filter(item => !deletedWorkIds.includes(item.id));
 
-        // Asegurar que los trabajos iniciales existan en Firestore si aún no se han creado y no fueron eliminados
-        for (const initWork of INITIAL_CLIENT_WORKS) {
-          if (deletedWorkIds.includes(initWork.id)) continue;
-          const found = list.find(w => w.id === initWork.id || (w.title && w.title.toLowerCase() === initWork.title.toLowerCase()));
-          if (!found) {
+        // Solo si la colección en Firestore está completamente vacía (instalación inicial virgen), sembrar trabajos base
+        if (snap.empty && list.length === 0 && !localStorage.getItem('works_initialized')) {
+          for (const initWork of INITIAL_CLIENT_WORKS) {
             try {
               await setDoc(doc(db, 'client_works', initWork.id), initWork);
               list.push(initWork);
@@ -332,6 +322,7 @@ const Admin = () => {
               list.push(initWork);
             }
           }
+          localStorage.setItem('works_initialized', 'true');
         }
 
         setClientWorks(list);
@@ -340,12 +331,14 @@ const Admin = () => {
         console.warn('Fallo al obtener trabajos de Firestore, usando cache:', err);
         const stored = JSON.parse(localStorage.getItem('clientWorks') || '[]');
         const deletedWorkIds = JSON.parse(localStorage.getItem('deletedWorkIds') || '[]');
-        let list = stored.filter(item => item.id !== 'work-rio-cuarto-informe' && !(item.title || '').includes('Informe Ejecutivo de Opinión Pública'));
-        INITIAL_CLIENT_WORKS.forEach(initWork => {
-          if (!deletedWorkIds.includes(initWork.id) && !list.some(w => w.id === initWork.id || (w.title && w.title.toLowerCase() === initWork.title.toLowerCase()))) {
-            list.push(initWork);
-          }
-        });
+        let list = stored.filter(item => 
+          item.id !== 'work-rio-cuarto-informe' && 
+          !(item.title || '').includes('Informe Ejecutivo de Opinión Pública') &&
+          item.id !== 'work-encuesta-ia-mexico-2026' &&
+          !(item.title || '').toLowerCase().includes('ia méxico') &&
+          !(item.title || '').toLowerCase().includes('ia mexico') &&
+          !deletedWorkIds.includes(item.id)
+        );
         setClientWorks(list);
       }
     };
@@ -1231,11 +1224,12 @@ const Admin = () => {
 
       {/* ── SIDEBAR DE NAVEGACIÓN ────────────────────────── */}
       <aside className={`fixed lg:static inset-y-0 left-0 z-30 w-64 bg-brand-surface border-r border-white/5 flex flex-col p-6 transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-        <div className="mb-8 flex items-start justify-between">
-          <div className="flex flex-col leading-none">
-            <span className="text-sm font-display font-light tracking-[0.2em] text-brand-secondary">GRUPO</span>
-            <span className="text-2xl font-display font-extrabold tracking-tight text-white">CONSULTIO</span>
-          </div>
+        <div className="mb-8 flex items-center justify-between">
+          <img 
+            src="/brand/logo-color-white.png" 
+            alt="Grupo Consultio" 
+            className="h-8 w-auto object-contain" 
+          />
           <button className="lg:hidden p-1 text-brand-secondary hover:text-white" onClick={() => setSidebarOpen(false)}>
             <X size={20} />
           </button>
@@ -1293,10 +1287,11 @@ const Admin = () => {
           <button onClick={() => setSidebarOpen(true)} className="p-2 text-brand-secondary hover:text-white hover:bg-white/5 rounded-lg transition-colors">
             <Menu size={22} />
           </button>
-          <div className="flex flex-col leading-none">
-            <span className="text-xs font-display font-light tracking-[0.2em] text-brand-secondary">GRUPO</span>
-            <span className="text-base font-display font-extrabold tracking-tight text-white">CONSULTIO</span>
-          </div>
+          <img 
+            src="/brand/logo-color-white.png" 
+            alt="Grupo Consultio" 
+            className="h-6 w-auto object-contain" 
+          />
         </div>
 
         <div className="flex-1 p-4 md:p-8 lg:p-10">
